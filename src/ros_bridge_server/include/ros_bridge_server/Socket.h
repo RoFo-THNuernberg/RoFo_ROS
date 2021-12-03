@@ -5,6 +5,11 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+enum {
+    SOCKET_FAIL = -1,
+    SOCKET_OK = 1
+} SOCKET_STATUS;
+
 class Socket
 {
     public:

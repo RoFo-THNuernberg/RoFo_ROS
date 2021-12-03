@@ -57,18 +57,12 @@ void Socket::_create_socket()
 
 int Socket::accept_connection()
 {
-    return _connection_fd = accept(_socket_fd, NULL, NULL);
+    return _connection_fd = accept4(_socket_fd, NULL, NULL, SOCK_NONBLOCK);
 }
 
 int Socket::socket_receive(uint8_t* rx_buffer, int recv_bytes)
 {
     int len = recv(_connection_fd, rx_buffer, recv_bytes, 0);
-
-    if(len == -1)
-    {
-        shutdown(_connection_fd, SHUT_RDWR);
-        close(_connection_fd);
-    }
 
     return len;
 }

@@ -20,7 +20,8 @@ int main(int argc, char **argv)
 
         if(new_handle->wait_for_accept() == -1)
             delete new_handle;
-
+        
+        ros::spinOnce();
         loop_rate.sleep();
     }
 
