@@ -27,11 +27,7 @@ uint8_t SmartBufferPtr::operator[](int incr) const
 void operator<<(std::string& str, SmartBufferPtr const& bfr)
 {
     int i = 0;
-    while(bfr[i] != '\0')
-        i++;
 
-    i = 0;
-    
     while(bfr[i] != '\0')
     {
         str.push_back(bfr[i]);

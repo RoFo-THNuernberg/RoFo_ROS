@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ros/ros.h"
-#include "ros_msgs.h"
+#include "RosMsgs.h"
 #include "Socket.h"
 #include "msg_id.h"
 
@@ -10,9 +10,7 @@
 class SubscriberCallback
 {
     public:
-        SubscriberCallback(std::string topic, Socket* sock) : _topic{topic}, _sock{sock} {
-            
-        }
+        SubscriberCallback(std::string topic, Socket* sock) : _topic{topic}, _sock{sock} {}
 
         template <typename T, typename S> void create_subscribtion(std::string const& topic, ros::NodeHandle* node_handle)
         {
@@ -22,17 +20,14 @@ class SubscriberCallback
         template <typename T, typename S> void _subscribtion_callback(T const& msg)
         {   
             ROS_INFO("sub callback----------------------------------------------------------------");
-            
 
-            S local_msg = msg;
-
-            ROS_INFO("%f, %f, %f", local_msg.x, local_msg.y, local_msg.theta);
+            S local_msg = (S)msg;
             
             uint8_t pkt_buffer[2 + _topic.size() + local_msg.getSize()];
             
             int pkt_len = 0;
 
-            pkt_buffer[0] = local_msg.getMsgType();
+            pkt_buffer[0] = PUBLISH_ID;
             pkt_len++;
             
             memcpy(pkt_buffer + pkt_len, _topic.c_str(), _topic.size());

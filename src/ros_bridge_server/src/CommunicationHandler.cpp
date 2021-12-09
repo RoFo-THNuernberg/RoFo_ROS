@@ -6,6 +6,7 @@ CommunicationHandler::CommunicationHandler(Socket& sock) : _sock{sock}, _communi
         _communication_handler_thread.detach();
 
         _keep_alive_time_us = ros::Time::now().toNSec() / 1000;
+        _last_send_keep_alive_us = ros::Time::now().toNSec() / 1000;
 }
 
 CommunicationHandler::~CommunicationHandler()  
@@ -23,7 +24,7 @@ CommunicationHandler::~CommunicationHandler()
 
 void CommunicationHandler::_communication_handler(CommunicationHandler *conn_handle)
 {   
-    ros::Rate loop_rate(20);
+    ros::Rate loop_rate(100);
 
     while(ros::ok())
     {   
@@ -121,6 +122,7 @@ int CommunicationHandler::_interpret_receive()
 
                 _node_handle = new ros::NodeHandle(_namespace);
                 _subscribe("set_pose2D", "geometry_msgs/Pose2D");
+                _subscribe("goal_point", "geometry_msgs/Point");
                 _advertise("pose2D", "geometry_msgs/Pose2D");
 
                 break;
@@ -141,7 +143,7 @@ int CommunicationHandler::_interpret_receive()
 
                 break;
             }
-            case GEOMETRY_MSGS_POSE_2D_ID:
+            case PUBLISH_ID:
             {
                 rx_buffer_ptr += 1;
 
@@ -155,10 +157,17 @@ int CommunicationHandler::_interpret_receive()
                 pose.deserialize(rx_buffer_ptr);
                 rx_buffer_ptr += pose.getSize();
                 
-                ros::Publisher* pub = _getPublisher(topic);
+                PublisherInterface* pub = _getPublisher(topic);
 
                 if(pub != nullptr)
-                    pub->publish((geometry_msgs::Pose2D)pose);
+                {   
+                    pub->getMsgType()->deserialize(rx_buffer_ptr);
+                    rx_buffer_ptr += pub->getMsgType()->getSize();
+
+                    pub->publish();
+                }
+                else
+                    socket_len_err = SOCKET_FAIL;
 
                 break;
             }
@@ -172,23 +181,28 @@ int CommunicationHandler::_interpret_receive()
 }
 
 int CommunicationHandler::_send_keep_alive()
-{
-    uint8_t pkt_buffer[1 + sizeof(uint64_t)];
-    int pkt_len = 0;
+{   
+    uint64_t time_now_us = ros::Time::now().toNSec() / 1000;
 
-    pkt_buffer[0] = KEEP_ALIVE_ID;
-    pkt_len++;  
+    if((time_now_us - _last_send_keep_alive_us) / 1000 > KEEP_ALIVE_SEND_PERIOD_MS)
+    {
+        uint8_t pkt_buffer[1 + sizeof(uint64_t)];
+        int pkt_len = 0;
 
-    *(uint64_t*)(pkt_buffer + pkt_len) = ros::Time::now().toNSec() / 1000;
+        pkt_buffer[0] = KEEP_ALIVE_ID;
+        pkt_len++;  
 
-    pkt_len += sizeof(uint64_t);
+        *(uint64_t*)(pkt_buffer + pkt_len) = time_now_us;
 
-    _sock.socket_send(pkt_buffer, pkt_len);
+        pkt_len += sizeof(uint64_t);
+
+        _sock.socket_send(pkt_buffer, pkt_len);
+    }
 
     return SOCKET_OK;
 }
 
-ros::Publisher* CommunicationHandler::_getPublisher(std::string const& topic)
+PublisherInterface* CommunicationHandler::_getPublisher(std::string const& topic)
 {
     std::string full_topic_name = _node_handle->getNamespace() + "/" + topic; 
 
@@ -205,23 +219,37 @@ ros::Publisher* CommunicationHandler::_getPublisher(std::string const& topic)
 
 void CommunicationHandler::_advertise(std::string const& topic, std::string const& message_type)
 {   
-    ros::Publisher * new_pub;
+    PublisherInterface* new_pub = nullptr;
 
     if(message_type == "geometry_msgs/Pose2D")
-        new_pub = new ros::Publisher(_node_handle->advertise<geometry_msgs::Pose2D>(topic, 10, false));
+        new_pub = new Publisher<geometry_msgs::Pose2D>(_node_handle, topic, new ros_msgs::Pose2D);
+    else if (message_type == "geometry_msgs/Twist")
+        new_pub = new Publisher<geometry_msgs::Twist>(_node_handle, topic, new ros_msgs::Twist2D);
+    else if (message_type == "geometry_msgs/Point")
+        new_pub = new Publisher<geometry_msgs::Point>(_node_handle, topic, new ros_msgs::Point2D);
+    else if (message_type == "std_msgs/String")
+        new_pub = new Publisher<std_msgs::String>(_node_handle, topic, new ros_msgs::String);
 
-
-    _publisher.push_back(new_pub);
+    if(new_pub != nullptr)
+        _publisher.push_back(new_pub);
 }
 
 void CommunicationHandler::_subscribe(std::string const& topic, std::string const& message_type)
 {
-    SubscriberCallback *new_sub = nullptr;
+    SubscriberCallback *new_sub = new SubscriberCallback(topic, &_sock);
 
     if(message_type == "geometry_msgs/Pose2D")
-    {
-        new_sub = new SubscriberCallback(topic, &_sock);
         new_sub->create_subscribtion<geometry_msgs::Pose2D, ros_msgs::Pose2D>(topic, _node_handle);
+    else if(message_type == "geometry_msgs/Twist")
+        new_sub->create_subscribtion<geometry_msgs::Twist, ros_msgs::Twist2D>(topic, _node_handle);
+    else if(message_type == "geometry_msgs/Point")
+        new_sub->create_subscribtion<geometry_msgs::Point, ros_msgs::Point2D>(topic, _node_handle);
+    else if(message_type == "std_msgs/String")
+        new_sub->create_subscribtion<std_msgs::String, ros_msgs::String>(topic, _node_handle);
+    else
+    {
+        delete new_sub;
+        new_sub = nullptr;
     }
 
     if(new_sub != nullptr)

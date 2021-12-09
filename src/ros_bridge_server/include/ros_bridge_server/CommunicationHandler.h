@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Socket.h" 
-#include "ros_msgs.h"
+#include "RosMsgs.h"
 #include "SubscriberCallback.h"
+#include "Publisher.h"
 #include "msg_id.h"
 #include "SmartBufferPtr.h"
 
@@ -51,7 +52,7 @@ class CommunicationHandler
         int _send_keep_alive();
 
 
-        ros::Publisher* _getPublisher(const std::string& topic);
+        PublisherInterface* _getPublisher(const std::string& topic);
 
         void _unadvertise();
         void _advertise(std::string const& topic, std::string const& message_type);
@@ -64,12 +65,13 @@ class CommunicationHandler
 
         uint64_t _robot_time_difference_us;
         uint64_t _keep_alive_time_us;
+        uint64_t _last_send_keep_alive_us;
 
         bool _communication_initialized = false;
 
         std::thread _communication_handler_thread;
         std::thread _check_keep_alive_thread;
 
-        std::vector<ros::Publisher*> _publisher;
+        std::vector<PublisherInterface*> _publisher;
         std::vector<SubscriberCallback*> _subscriber;
 };
