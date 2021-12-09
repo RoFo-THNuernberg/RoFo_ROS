@@ -3,7 +3,7 @@
 
 #include <cstring>
 
-#include "ConnectionHandler.h"
+#include "CommunicationHandler.h"
 
 
 int main(int argc, char **argv)
@@ -16,10 +16,13 @@ int main(int argc, char **argv)
 
     while(ros::ok())
     {
-        ConnectionHandler* new_handle = new ConnectionHandler;
+        Socket* sock = new Socket;
 
-        if(new_handle->wait_for_accept() == -1)
-            delete new_handle;
+        if(sock->accept_connection() != SOCKET_FAIL)
+        {
+            ROS_INFO("Accepted connection!");
+            CommunicationHandler* new_communication = new CommunicationHandler(*sock);
+        }
         
         ros::spinOnce();
         loop_rate.sleep();
