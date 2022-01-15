@@ -5,6 +5,7 @@
 #include <mutex>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <fcntl.h>
 
 enum {
@@ -47,6 +48,10 @@ class Socket
          */
         int socket_receive(uint8_t* rx_buffer, int recv_bytes);
 
+        int socket_receive_nonblock(uint8_t* rx_buffer, int recv_bytes);
+
+        int socket_receive_string(std::string& new_string, int max_bytes);
+
         void close_connection();
 
         /**
@@ -78,6 +83,8 @@ class Socket
          * This function is only called at the construction of the first socket object.
          */
         void _create_socket();
+
+        void _enable_keep_alive();
 
         int _connection_fd;
 

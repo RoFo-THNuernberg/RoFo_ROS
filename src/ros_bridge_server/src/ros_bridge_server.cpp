@@ -10,9 +10,9 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "ros_bridge_server");
 
-    ros::NodeHandle nh;
+    ros::start();
 
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(100);
 
     while(ros::ok())
     {
@@ -27,6 +27,8 @@ int main(int argc, char **argv)
         ros::spinOnce();
         loop_rate.sleep();
     }
+
+    ros::shutdown();
 
     return 0;
 }

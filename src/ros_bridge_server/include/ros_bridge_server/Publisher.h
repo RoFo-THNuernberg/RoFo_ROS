@@ -12,14 +12,14 @@ class PublisherInterface
         ~PublisherInterface() {}
         virtual void publish() = 0;
         virtual std::string getTopic() = 0;
-        virtual ros_msgs::RosMsg* getMsgType() = 0;
+        virtual ros_msgs::RosMsg& getMsg() = 0;
 
 };
 
-template <typename T> class Publisher : public PublisherInterface
+template <typename T, typename S> class Publisher : public PublisherInterface
 {
     public:
-        Publisher(ros::NodeHandle* node_handle, std::string const& topic, ros_msgs::RosMsg* msg) : _pub{node_handle->advertise<T>(topic, 10, false)}, _msg{msg} {}
+        Publisher(ros::NodeHandle* node_handle, std::string const& topic) : _pub{node_handle->advertise<T>(topic, 10, false)} {}
 
         ~Publisher()
         {
@@ -28,7 +28,7 @@ template <typename T> class Publisher : public PublisherInterface
 
         void publish() override 
         {
-            _pub.publish(*((T*)_msg));
+            _pub.publish((T)_msg);
         }
 
         std::string getTopic() override
@@ -36,14 +36,12 @@ template <typename T> class Publisher : public PublisherInterface
             return _pub.getTopic();
         }
 
-        ros_msgs::RosMsg* getMsgType() override
+        ros_msgs::RosMsg& getMsg() override
         {
             return _msg;
         }
 
     private:
         ros::Publisher _pub;
-        ros_msgs::RosMsg* _msg;
-        
-
+        S _msg;
 };

@@ -5,9 +5,9 @@
 #include "geometry_msgs/Pose2D.h"
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Twist.h"
+#include "turtlesim/Pose.h"
 
 #include "msg_id.h"
-#include "SmartBufferPtr.h"
 
 namespace ros_msgs
 {
@@ -16,7 +16,7 @@ namespace ros_msgs
         virtual ~RosMsg() {}
         virtual size_t getSize() const = 0;
         virtual void serialize(uint8_t* buffer) const = 0;
-        virtual void deserialize(SmartBufferPtr bfr) = 0; 
+        virtual void deserialize(uint8_t* buffer) = 0; 
     };
 
     struct String : RosMsg, public std_msgs::String
@@ -31,7 +31,10 @@ namespace ros_msgs
 
             size_t getSize() const override 
             { 
-                return data.size() + 1; 
+                if(data.empty() == true)
+                    return 0; 
+                
+                return data.size();
             }
             
             void serialize(uint8_t* buffer) const override 
@@ -39,16 +42,16 @@ namespace ros_msgs
                 memcpy(buffer, data.c_str(), data.size());
             }
             
-            void deserialize(SmartBufferPtr bfr)
+            void deserialize(uint8_t* buffer)
             {
-                data << bfr;
+                data.assign((char*)buffer);
             }
     };
 
     struct Pose2D : RosMsg, public geometry_msgs::Pose2D
     {   
         public:
-            Pose2D(float new_x, float new_y, float new_theta) : geometry_msgs::Pose2D()
+            Pose2D(double new_x, double new_y, double new_theta) : geometry_msgs::Pose2D()
             {
                 x = new_x;
                 y = new_y;
@@ -64,32 +67,30 @@ namespace ros_msgs
 
             void serialize(uint8_t* buffer) const 
             { 
-                float* buff = (float*)buffer;
+                double* buff = (double*)buffer;
                 
                 buff[0] = x;
                 buff[1] = y;
                 buff[2] = theta;
             }
 
-            void deserialize(SmartBufferPtr bfr) 
-            {
-                x << bfr;
-                bfr += 4;
+            void deserialize(uint8_t* buffer) 
+            {   
+                double* buff = (double*)buffer;
 
-                y << bfr;
-                bfr += 4;
-
-                theta << bfr;
+                x = buff[0];
+                y = buff[1];
+                theta = buff[2];
             }
 
         private:
-            size_t const _msg_size = 12;
+            size_t const _msg_size = 24;
     };
 
     struct Point2D : RosMsg, public geometry_msgs::Point
     {   
         public:
-            Point2D(float new_x, float new_y) : geometry_msgs::Point()
+            Point2D(double new_x, double new_y) : geometry_msgs::Point()
             {
                 x = new_x;
                 y = new_y;
@@ -104,28 +105,27 @@ namespace ros_msgs
 
             void serialize(uint8_t* buffer) const override 
             { 
-                float* buff = (float*)buffer;
+                double* buff = (double*)buffer;
                 buff[0] = x;
                 buff[1] = y;
             }
 
-            void deserialize(SmartBufferPtr bfr) override
+            void deserialize(uint8_t* buffer) override
             {
-                x << bfr;
-                bfr += 4;
+                double* buff = (double*)buffer;
 
-                y << bfr;
-                bfr += 4;
+                x = buff[0];
+                y = buff[1];
             }
 
         private:
-            size_t const _msg_size = 8;
+            size_t const _msg_size = 16;
     };
 
     struct Twist2D : RosMsg, public geometry_msgs::Twist
     {
         public:
-            Twist2D(float x, float w) : geometry_msgs::Twist()
+            Twist2D(double x, double w) : geometry_msgs::Twist()
             {
                 linear.x = x;
                 angular.z = w;
@@ -140,23 +140,58 @@ namespace ros_msgs
 
             void serialize(uint8_t* buffer) const override 
             { 
-                float* buff = (float*)buffer;
+                double* buff = (double*)buffer;
                 buff[0] = linear.x;
                 buff[1] = angular.z;
             }
 
-            void deserialize(SmartBufferPtr bfr) override
+            void deserialize(uint8_t* buffer) override
             {
-                linear.x << bfr;
-                bfr += 4;
+                double* buff = (double*)buffer;
 
-                angular.z << bfr;
-                bfr += 4;
+                linear.x = buff[0];
+                angular.z = buff[1];
             }       
 
         private:
-            size_t const _msg_size = 8;
+            size_t const _msg_size = 16;
     };
 
+    struct Pose2DSim : RosMsg, public turtlesim::Pose
+    {
+        public:
+            Pose2DSim(float new_x, float new_y, float new_theta) : turtlesim::Pose()
+            {
+                x = new_x;
+                y = new_y;
+                theta = new_theta;
+            }
+            Pose2DSim() : turtlesim::Pose() {}
+            Pose2DSim(turtlesim::Pose pose) : turtlesim::Pose(pose) {}
 
+            size_t getSize() const override 
+            { 
+                return _msg_size; 
+            }
+
+            void serialize(uint8_t* buffer) const override 
+            { 
+                float* buff = (float*)buffer;
+                buff[0] = x;
+                buff[1] = y;
+                buff[2] = theta;
+            }
+
+            void deserialize(uint8_t* buffer) override
+            {
+                float* buff = (float*)buffer;
+
+                x = buff[0];
+                y = buff[1];
+                theta = buff[2];
+            }       
+
+        private:
+            size_t const _msg_size = 12;
+    };
 } 

@@ -19,8 +19,6 @@ class SubscriberCallback
 
         template <typename T, typename S> void _subscribtion_callback(T const& msg)
         {   
-            ROS_INFO("sub callback----------------------------------------------------------------");
-
             S local_msg = (S)msg;
             
             uint8_t pkt_buffer[2 + _topic.size() + local_msg.getSize()];

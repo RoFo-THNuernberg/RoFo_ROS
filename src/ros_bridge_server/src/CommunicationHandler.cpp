@@ -38,7 +38,7 @@ void CommunicationHandler::_communication_handler(CommunicationHandler *conn_han
         loop_rate.sleep();
     }
 
-    ROS_INFO_NAMED(conn_handle->_namespace.c_str(), "Shutting down communication_handler_thread");
+    ROS_INFO("Shutting down communication_handler_thread! Socket errno: %d", errno);
 
     conn_handle->_sock.close_connection();
     
@@ -62,122 +62,132 @@ void CommunicationHandler::_check_keep_alive(CommunicationHandler *conn_handle)
         loop_rate.sleep();
     }
 
-    ROS_INFO_NAMED(conn_handle->_namespace.c_str(), "Shutting down keep_alive_thread!");
+    ROS_INFO( "Shutting down keep_alive_thread!");
+    ROS_INFO("Current Time: %ld, Last Keep_Alive: %ld", ros::Time::now().toNSec() / 1000, conn_handle->_keep_alive_time_us);
 
     conn_handle->_sock.close_connection();
 }
 
 int CommunicationHandler::_interpret_receive()
 {   
-    /*
-    int status = SOCKET_OK;
-    
-    uint8_t rx_buffer[RX_BUF_LEN];
-    uint8_t* rx_buffer_ptr = rx_buffer;
+    int status_error = 0;
 
-    int len = _sock.socket_receive(rx_buffer, RX_BUF_LEN);
+    while(1)
+    {
 
-    if(len == -1)
-        status = SOCKET_FAIL;
-        */
+        uint8_t msg_id;
 
-    int socket_len_err = 0;
+        status_error = _sock.socket_receive_nonblock(&msg_id, 1);
 
-    uint8_t* rx_buffer[64];
-    int rx_buffer_length = 0;
-    int rx_buffer_row = 0;
-
-    do {
-        rx_buffer[rx_buffer_row] = new uint8_t[RX_BUF_LEN];
-
-        socket_len_err = _sock.socket_receive(rx_buffer[rx_buffer_row], RX_BUF_LEN);
-        rx_buffer_length += socket_len_err;
-
-        rx_buffer_row++;
-
-    } while (socket_len_err == RX_BUF_LEN && rx_buffer_row < 64);
-
-    SmartBufferPtr rx_buffer_ptr(rx_buffer, RX_BUF_LEN, rx_buffer_row);
+        if(status_error == SOCKET_FAIL)
+        {
+            ROS_ERROR("Error while receiving MSG ID");
+            break;
+        }
+        else if (status_error == 0)
+            break;
 
 
-    //Guarantees that the first message is the initialize packet
-    if(_communication_initialized == false && rx_buffer_ptr[0] != INIT_ID && socket_len_err != 0)
-        socket_len_err = SOCKET_FAIL;
- 
+        //Guarantees that the first message is the initialize packet
+        if(_communication_initialized == false && msg_id != INIT_ID)
+        {
+            status_error = SOCKET_FAIL;
+            break;
+        }
+            
 
-    while(rx_buffer_length > rx_buffer_ptr - SmartBufferPtr(rx_buffer, RX_BUF_LEN, rx_buffer_row) && socket_len_err != SOCKET_FAIL)
-    {   
-        switch(rx_buffer_ptr[0])
+
+        switch(msg_id)
         {   
             case INIT_ID:
             {
-                rx_buffer_ptr += 1;
+                status_error = _sock.socket_receive_string(_namespace, 32);
 
-                _namespace << rx_buffer_ptr;
-                rx_buffer_ptr += _namespace.size() + 1;
+                if(status_error == SOCKET_FAIL)
+                    break;
 
                 _communication_initialized = true;
 
-                ROS_INFO_NAMED(_namespace.c_str(), "Received Initialize message! Client name: %s", _namespace.c_str());
+                ROS_INFO("Received Initialize message! Client name: %s", _namespace.c_str());
 
                 _node_handle = new ros::NodeHandle(_namespace);
-                _subscribe("set_pose2D", "geometry_msgs/Pose2D");
                 _subscribe("goal_point", "geometry_msgs/Point");
+                _subscribe("pose", "turtlesim/Pose");
+                _subscribe("vel", "geometry_msgs/Twist");
+                _advertise("cmd_vel", "geometry_msgs/Twist");
                 _advertise("pose2D", "geometry_msgs/Pose2D");
 
                 break;
             }
             case KEEP_ALIVE_ID:
-            {
-                rx_buffer_ptr += 1;
-
+            {   
                 uint64_t robot_time;
-                robot_time << rx_buffer_ptr;
-                rx_buffer_ptr += sizeof(uint64_t);
+                status_error = _sock.socket_receive((uint8_t*)&robot_time, sizeof(robot_time));
+
+                if(status_error == SOCKET_FAIL)
+                    break;
 
                 _keep_alive_time_us = ros::Time::now().toNSec() / 1000;
 
                 _robot_time_difference_us = _keep_alive_time_us - robot_time;
 
-                ROS_INFO_NAMED(_namespace.c_str(), "Keep Alive! Robot Time: %ld", robot_time);
+                ROS_INFO("Keep Alive! Robot Time: %ld", robot_time);
 
                 break;
             }
             case PUBLISH_ID:
-            {
-                rx_buffer_ptr += 1;
-
+            {   
                 std::string topic;
-                topic << rx_buffer_ptr;
-                rx_buffer_ptr += topic.size() + 1;
+                status_error = _sock.socket_receive_string(topic, 32);
 
-                ROS_INFO_NAMED(_namespace.c_str(), "Received topic: %s", topic.c_str());
-            
-                ros_msgs::Pose2D pose;
-                pose.deserialize(rx_buffer_ptr);
-                rx_buffer_ptr += pose.getSize();
+                if(status_error == SOCKET_FAIL)
+                    break;
+
+                ROS_INFO("Received topic: %s", topic.c_str());
                 
                 PublisherInterface* pub = _getPublisher(topic);
 
                 if(pub != nullptr)
                 {   
-                    pub->getMsgType()->deserialize(rx_buffer_ptr);
-                    rx_buffer_ptr += pub->getMsgType()->getSize();
+                    int msg_len = pub->getMsg().getSize();
+
+                    if(msg_len == -1)
+                    {
+                        status_error = _sock.socket_receive((uint8_t*)&msg_len, sizeof(msg_len));
+
+                        if(status_error == SOCKET_FAIL)
+                            break;
+                    }
+
+                    uint8_t* rx_buffer = new uint8_t[msg_len];
+                    status_error = _sock.socket_receive(rx_buffer, msg_len);
+
+                    if(status_error == SOCKET_FAIL)
+                        break;
+
+                    pub->getMsg().deserialize(rx_buffer);
+
+                    delete[] rx_buffer;
 
                     pub->publish();
                 }
                 else
-                    socket_len_err = SOCKET_FAIL;
+                    status_error = SOCKET_FAIL;
 
                 break;
             }
             default:
-                socket_len_err = SOCKET_FAIL;
+                ROS_ERROR("ID not found: %d", msg_id);
+                status_error = SOCKET_FAIL;
                 break;
         }
+
+
+        if(status_error == SOCKET_FAIL)
+            break;
     }
 
-    return socket_len_err;
+    return status_error;
 }
 
 int CommunicationHandler::_send_keep_alive()
@@ -195,6 +205,8 @@ int CommunicationHandler::_send_keep_alive()
         *(uint64_t*)(pkt_buffer + pkt_len) = time_now_us;
 
         pkt_len += sizeof(uint64_t);
+
+        _last_send_keep_alive_us = time_now_us;
 
         _sock.socket_send(pkt_buffer, pkt_len);
     }
@@ -222,13 +234,13 @@ void CommunicationHandler::_advertise(std::string const& topic, std::string cons
     PublisherInterface* new_pub = nullptr;
 
     if(message_type == "geometry_msgs/Pose2D")
-        new_pub = new Publisher<geometry_msgs::Pose2D>(_node_handle, topic, new ros_msgs::Pose2D);
+        new_pub = new Publisher<geometry_msgs::Pose2D, ros_msgs::Pose2D>(_node_handle, topic);
     else if (message_type == "geometry_msgs/Twist")
-        new_pub = new Publisher<geometry_msgs::Twist>(_node_handle, topic, new ros_msgs::Twist2D);
+        new_pub = new Publisher<geometry_msgs::Twist, ros_msgs::Twist2D>(_node_handle, topic);
     else if (message_type == "geometry_msgs/Point")
-        new_pub = new Publisher<geometry_msgs::Point>(_node_handle, topic, new ros_msgs::Point2D);
+        new_pub = new Publisher<geometry_msgs::Point, ros_msgs::Point2D>(_node_handle, topic);
     else if (message_type == "std_msgs/String")
-        new_pub = new Publisher<std_msgs::String>(_node_handle, topic, new ros_msgs::String);
+        new_pub = new Publisher<std_msgs::String, ros_msgs::String>(_node_handle, topic);
 
     if(new_pub != nullptr)
         _publisher.push_back(new_pub);
@@ -246,6 +258,8 @@ void CommunicationHandler::_subscribe(std::string const& topic, std::string cons
         new_sub->create_subscribtion<geometry_msgs::Point, ros_msgs::Point2D>(topic, _node_handle);
     else if(message_type == "std_msgs/String")
         new_sub->create_subscribtion<std_msgs::String, ros_msgs::String>(topic, _node_handle);
+    else if(message_type == "turtlesim/Pose")
+        new_sub->create_subscribtion<turtlesim::Pose, ros_msgs::Pose2DSim>(topic, _node_handle);
     else
     {
         delete new_sub;

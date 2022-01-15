@@ -5,7 +5,6 @@
 #include "SubscriberCallback.h"
 #include "Publisher.h"
 #include "msg_id.h"
-#include "SmartBufferPtr.h"
 
 #include <thread>
 #include <string>
@@ -13,6 +12,7 @@
 
 #include "ros/ros.h"
 #include "geometry_msgs/Pose2D.h"
+#include "turtlesim/Pose.h"
 
 /**
  * \class CommuniatonHandler

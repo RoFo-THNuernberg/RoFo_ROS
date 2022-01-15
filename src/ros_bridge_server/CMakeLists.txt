@@ -28,5 +28,5 @@ catkin_package()
 ## Your package locations should be listed before other locations
 include_directories( include/ros_bridge_server ${catkin_INCLUDE_DIRS} )
 
-add_executable(ros_bridge_server src/ros_bridge_server.cpp src/Socket.cpp src/CommunicationHandler.cpp src/SmartBufferPtr.cpp)
+add_executable(ros_bridge_server src/ros_bridge_server.cpp src/Socket.cpp src/CommunicationHandler.cpp)
 target_link_libraries(ros_bridge_server ${catkin_LIBRARIES})
