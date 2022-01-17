@@ -17,7 +17,10 @@ CommunicationHandler::~CommunicationHandler()
     _unsubscribe();
 
     if(_node_handle != nullptr)
+    {
+        _node_handle->shutdown();
         delete _node_handle;
+    }
     
     delete &_sock;
 }
