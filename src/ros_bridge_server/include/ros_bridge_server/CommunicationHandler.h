@@ -52,7 +52,7 @@ class CommunicationHandler
         int _send_keep_alive();
 
 
-        PublisherInterface* _getPublisher(const std::string& topic);
+        Publisher* _getPublisher(const std::string& topic);
 
         void _unadvertise();
         void _advertise(std::string const& topic, std::string const& message_type);
@@ -72,6 +72,6 @@ class CommunicationHandler
         std::thread _communication_handler_thread;
         std::thread _check_keep_alive_thread;
 
-        std::vector<PublisherInterface*> _publisher;
+        std::vector<Publisher*> _publisher;
         std::vector<SubscriberCallback*> _subscriber;
 };

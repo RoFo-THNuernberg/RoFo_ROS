@@ -1,6 +1,5 @@
 #include "ros/ros.h"
 
-
 #include <cstring>
 
 #include "CommunicationHandler.h"

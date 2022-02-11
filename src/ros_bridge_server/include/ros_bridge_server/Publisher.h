@@ -5,43 +5,57 @@
 #include <string>
 
 #include "RosMsgs.h"
+#include "Socket.h"
 
-class PublisherInterface 
+class Publisher 
 {
     public:
-        ~PublisherInterface() {}
-        virtual void publish() = 0;
-        virtual std::string getTopic() = 0;
-        virtual ros_msgs::RosMsg& getMsg() = 0;
+        virtual ~Publisher() {}
+
+        virtual bool recvMessage() = 0;
+        virtual bool compareTopic(std::string const& topic) = 0;
 
 };
 
-template <typename T, typename S> class Publisher : public PublisherInterface
+template <typename T, typename S> class PublisherImpl : public Publisher
 {
     public:
-        Publisher(ros::NodeHandle* node_handle, std::string const& topic) : _pub{node_handle->advertise<T>(topic, 10, false)} {}
+        PublisherImpl(ros::NodeHandle& node_handle, std::string const& topic, Socket& sock) : _pub{node_handle.advertise<T>(topic, 10, false)}, _topic{topic}, _sock{sock} {}
 
-        ~Publisher()
+        ~PublisherImpl() {}
+
+        bool recvMessage() override
         {
-            delete _msg;
+            S ros_msg;
+
+            int32_t msg_len = ros_msg.getSize();
+
+            if(msg_len == 0)
+            {
+                if(_sock.socket_receive((uint8_t*)&msg_len, sizeof(msg_len)) == SOCKET_FAIL)
+                    return false;
+            }
+
+            uint8_t* rx_buffer = new uint8_t[msg_len];
+            if(_sock.socket_receive(rx_buffer, msg_len) == SOCKET_FAIL)
+                return false;
+
+            ros_msg.deserialize(rx_buffer);
+
+            _pub.publish((T)ros_msg);
+
+            delete[] rx_buffer;
+
+            return true;
         }
 
-        void publish() override 
+        bool compareTopic(std::string const& topic)
         {
-            _pub.publish((T)_msg);
-        }
-
-        std::string getTopic() override
-        {
-            return _pub.getTopic();
-        }
-
-        ros_msgs::RosMsg& getMsg() override
-        {
-            return _msg;
+            return _topic == topic;
         }
 
     private:
         ros::Publisher _pub;
-        S _msg;
+        std::string const _topic;
+        Socket& _sock;
 };

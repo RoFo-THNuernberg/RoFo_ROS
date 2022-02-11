@@ -90,35 +90,25 @@ bool Socket::is_connected()
     return _is_connected;
 }
 
-/*
-int Socket::socket_receive(uint8_t* rx_buffer, int recv_bytes)
-{
-    int len = recv(_connection_fd, rx_buffer, recv_bytes, 0);
-
-    if(len == SOCKET_FAIL && errno == EWOULDBLOCK)
-        len = 0;
-    else if(len == SOCKET_FAIL)
-        _is_connected = false;
-
-    return len;
-}
-*/
 
 int Socket::socket_receive(uint8_t* rx_buffer, int recv_bytes)
 {
     int bytes_read = 0;
+    int len = 0;
 
     do
     {   
-        bytes_read = recv(_connection_fd, rx_buffer, recv_bytes, 0);
+        len = recv(_connection_fd, rx_buffer + bytes_read, recv_bytes - bytes_read, 0);
 
-        if(bytes_read == SOCKET_FAIL && errno == EWOULDBLOCK)
-            bytes_read = 0;
+        if(len == SOCKET_FAIL && errno == EWOULDBLOCK)
+            len = 0;
 
-        recv_bytes -= bytes_read;
+        bytes_read += len;
+
+        if(bytes_read < recv_bytes)
+            usleep(1000);
     } 
-    while (recv_bytes > 0 && bytes_read != SOCKET_FAIL);
-
+    while (bytes_read < recv_bytes && len != SOCKET_FAIL);
 
     return bytes_read;
 }
@@ -126,22 +116,30 @@ int Socket::socket_receive(uint8_t* rx_buffer, int recv_bytes)
 int Socket::socket_receive_string(std::string& new_string, int max_bytes)
 {
     int bytes_read = 0;
+    int len = 0;
     char rx_buffer[max_bytes];
 
-    for(int i = 0; i < max_bytes; i++)
-    {
+    while(bytes_read < max_bytes)
+    {   
         do
         {
-            bytes_read = recv(_connection_fd, rx_buffer + i, 1, 0);
-        } 
-        while(bytes_read == SOCKET_FAIL && errno == EWOULDBLOCK);
+            len = recv(_connection_fd, rx_buffer + bytes_read, 1, 0);
 
-        if(bytes_read == SOCKET_FAIL || rx_buffer[i] == '\0')
+            if(len == SOCKET_FAIL && errno == EWOULDBLOCK)
+                usleep(1000);
+        } 
+        while(len == SOCKET_FAIL && errno == EWOULDBLOCK);
+
+        if(len == SOCKET_FAIL || rx_buffer[bytes_read] == '\0')
             break;
+        else
+            bytes_read++;
     }
 
-    if(bytes_read != SOCKET_FAIL    )
+    if(len != SOCKET_FAIL)
         new_string.assign(rx_buffer);
+    else
+        bytes_read = SOCKET_FAIL;
     
     return bytes_read;
 }
@@ -156,16 +154,33 @@ int Socket::socket_receive_nonblock(uint8_t* rx_buffer, int recv_bytes)
     return len;
 }
 
-int Socket::socket_send(uint8_t const* buffer, int buffer_len)
-{
-    int err = send(_connection_fd, buffer, buffer_len, 0);
+int Socket::socket_send(uint8_t const* tx_buffer, int buffer_len)
+{   
+    int len = 0;
+    int bytes_sent = 0;
 
-    if(err == SOCKET_FAIL && errno == EWOULDBLOCK)
-        err = 0;
-    else if (err == SOCKET_FAIL)
-        _is_connected = false;
+    while(bytes_sent < buffer_len)
+    {
+        len = send(_connection_fd, tx_buffer + bytes_sent, buffer_len - bytes_sent, 0);
+        
+        if(len == SOCKET_FAIL)
+        {
+            if(errno == EWOULDBLOCK)
+                len = 0;
+            else
+            {
+                _is_connected = false;
+                break;
+            }
+        }
 
-    return err;
+        bytes_sent += len;
+
+        if(bytes_sent < buffer_len)
+            usleep(1000);
+    }
+
+    return len;
 }
 
 void Socket::close_connection()

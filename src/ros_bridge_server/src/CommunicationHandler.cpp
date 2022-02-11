@@ -27,16 +27,17 @@ CommunicationHandler::~CommunicationHandler()
 
 void CommunicationHandler::_communication_handler(CommunicationHandler *conn_handle)
 {   
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(1000);
 
     while(ros::ok())
     {   
         if(conn_handle->_sock.is_connected() == false)
             break;
 
-        if(conn_handle->_send_keep_alive() != SOCKET_FAIL)
-            if(conn_handle->_interpret_receive() == SOCKET_FAIL)
-                break;
+        conn_handle->_send_keep_alive();
+
+        if(conn_handle->_interpret_receive() == SOCKET_FAIL)
+            break;
     
         loop_rate.sleep();
     }
@@ -71,6 +72,7 @@ void CommunicationHandler::_check_keep_alive(CommunicationHandler *conn_handle)
     conn_handle->_sock.close_connection();
 }
 
+
 int CommunicationHandler::_interpret_receive()
 {   
     int status_error = 0;
@@ -87,6 +89,7 @@ int CommunicationHandler::_interpret_receive()
             ROS_ERROR("Error while receiving MSG ID");
             break;
         }
+        //Break while loop if socket buffer is empty
         else if (status_error == 0)
             break;
 
@@ -104,7 +107,7 @@ int CommunicationHandler::_interpret_receive()
         {   
             case INIT_ID:
             {
-                status_error = _sock.socket_receive_string(_namespace, 32);
+                status_error = _sock.socket_receive_string(_namespace, MAX_TOPIC_LENGTH);
 
                 if(status_error == SOCKET_FAIL)
                     break;
@@ -117,8 +120,12 @@ int CommunicationHandler::_interpret_receive()
                 _subscribe("goal_point", "geometry_msgs/Point");
                 _subscribe("pose", "turtlesim/Pose");
                 _subscribe("vel", "geometry_msgs/Twist");
+                _subscribe("start_log", "std_msgs/String");
+
                 _advertise("cmd_vel", "geometry_msgs/Twist");
                 _advertise("pose2D", "geometry_msgs/Pose2D");
+                _advertise("string", "std_msgs/String");
+                _advertise("data_log", "std_msgs/String");
 
                 break;
             }
@@ -141,41 +148,22 @@ int CommunicationHandler::_interpret_receive()
             case PUBLISH_ID:
             {   
                 std::string topic;
-                status_error = _sock.socket_receive_string(topic, 32);
+                status_error = _sock.socket_receive_string(topic, MAX_TOPIC_LENGTH);
 
                 if(status_error == SOCKET_FAIL)
                     break;
 
-                ROS_INFO("Received topic: %s", topic.c_str());
+                //ROS_INFO("Received topic: %s", topic.c_str());
                 
-                PublisherInterface* pub = _getPublisher(topic);
+                Publisher* pub = _getPublisher(topic);
 
                 if(pub != nullptr)
-                {   
-                    int msg_len = pub->getMsg().getSize();
-
-                    if(msg_len == -1)
                     {
-                        status_error = _sock.socket_receive((uint8_t*)&msg_len, sizeof(msg_len));
-
-                        if(status_error == SOCKET_FAIL)
-                            break;
+                        if(pub->recvMessage() == false)
+                            status_error = SOCKET_FAIL;
                     }
-
-                    uint8_t* rx_buffer = new uint8_t[msg_len];
-                    status_error = _sock.socket_receive(rx_buffer, msg_len);
-
-                    if(status_error == SOCKET_FAIL)
-                        break;
-
-                    pub->getMsg().deserialize(rx_buffer);
-
-                    delete[] rx_buffer;
-
-                    pub->publish();
-                }
-                else
-                    status_error = SOCKET_FAIL;
+                    else
+                        status_error = SOCKET_FAIL;
 
                 break;
             }
@@ -217,16 +205,14 @@ int CommunicationHandler::_send_keep_alive()
     return SOCKET_OK;
 }
 
-PublisherInterface* CommunicationHandler::_getPublisher(std::string const& topic)
+Publisher* CommunicationHandler::_getPublisher(std::string const& topic)
 {
     std::string full_topic_name = _node_handle->getNamespace() + "/" + topic; 
 
     for(auto i : _publisher)
     {
-        if(i->getTopic() == full_topic_name)
-        {   
-            return i;
-        }
+        if(i->compareTopic(topic))
+                return i;
     }
 
     return nullptr;
@@ -234,16 +220,16 @@ PublisherInterface* CommunicationHandler::_getPublisher(std::string const& topic
 
 void CommunicationHandler::_advertise(std::string const& topic, std::string const& message_type)
 {   
-    PublisherInterface* new_pub = nullptr;
+    Publisher* new_pub = nullptr;
 
     if(message_type == "geometry_msgs/Pose2D")
-        new_pub = new Publisher<geometry_msgs::Pose2D, ros_msgs::Pose2D>(_node_handle, topic);
+        new_pub = new PublisherImpl<geometry_msgs::Pose2D, ros_msgs::Pose2D>(*_node_handle, topic, _sock);
     else if (message_type == "geometry_msgs/Twist")
-        new_pub = new Publisher<geometry_msgs::Twist, ros_msgs::Twist2D>(_node_handle, topic);
+        new_pub = new PublisherImpl<geometry_msgs::Twist, ros_msgs::Twist2D>(*_node_handle, topic, _sock);
     else if (message_type == "geometry_msgs/Point")
-        new_pub = new Publisher<geometry_msgs::Point, ros_msgs::Point2D>(_node_handle, topic);
+        new_pub = new PublisherImpl<geometry_msgs::Point, ros_msgs::Point2D>(*_node_handle, topic, _sock);
     else if (message_type == "std_msgs/String")
-        new_pub = new Publisher<std_msgs::String, ros_msgs::String>(_node_handle, topic);
+        new_pub = new PublisherImpl<std_msgs::String, ros_msgs::String>(*_node_handle, topic, _sock);
 
     if(new_pub != nullptr)
         _publisher.push_back(new_pub);

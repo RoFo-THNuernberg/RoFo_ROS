@@ -19,9 +19,9 @@ class SubscriberCallback
 
         template <typename T, typename S> void _subscribtion_callback(T const& msg)
         {   
-            S local_msg = (S)msg;
+            S local_msg = static_cast<S>(msg);
             
-            uint8_t pkt_buffer[2 + _topic.size() + local_msg.getSize()];
+            uint8_t* pkt_buffer = new uint8_t[2 + _topic.size() + local_msg.getSize()];
             
             int pkt_len = 0;
 
@@ -37,8 +37,9 @@ class SubscriberCallback
             local_msg.serialize(pkt_buffer + pkt_len);
             pkt_len += local_msg.getSize();
             
-
             _sock->socket_send(pkt_buffer, pkt_len);
+
+            delete[] pkt_buffer;
         }
 
     private:
