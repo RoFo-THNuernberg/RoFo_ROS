@@ -117,15 +117,6 @@ int CommunicationHandler::_interpret_receive()
                 ROS_INFO("Received Initialize message! Client name: %s", _namespace.c_str());
 
                 _node_handle = new ros::NodeHandle(_namespace);
-                _subscribe("goal_point", "geometry_msgs/Point");
-                _subscribe("pose", "turtlesim/Pose");
-                _subscribe("vel", "geometry_msgs/Twist");
-                _subscribe("start_log", "std_msgs/String");
-
-                _advertise("cmd_vel", "geometry_msgs/Twist");
-                _advertise("pose2D", "geometry_msgs/Pose2D");
-                _advertise("string", "std_msgs/String");
-                _advertise("data_log", "std_msgs/String");
 
                 break;
             }
@@ -142,6 +133,46 @@ int CommunicationHandler::_interpret_receive()
                 _robot_time_difference_us = _keep_alive_time_us - robot_time;
 
                 ROS_INFO("Keep Alive! Robot Time: %ld", robot_time);
+
+                break;
+            }
+            case ADVERTISE_ID:
+            {
+                std::string topic;
+                status_error = _sock.socket_receive_string(topic, MAX_TOPIC_LENGTH);
+
+                if(status_error == SOCKET_FAIL)
+                    break;
+
+                std::string msg_type;
+                status_error = _sock.socket_receive_string(msg_type, MAX_MSG_TYPE_LENGTH);
+
+                if(status_error == SOCKET_FAIL)
+                    break;
+
+                ROS_INFO("%s advertised Topic: %s, with Message Type: %s", _namespace.c_str(), topic.c_str(), msg_type.c_str());
+
+                _advertise(topic, msg_type);
+
+                break;
+            }
+            case SUBSCRIBE_ID:
+            {
+                std::string topic;
+                status_error = _sock.socket_receive_string(topic, MAX_TOPIC_LENGTH);
+
+                if(status_error == SOCKET_FAIL)
+                    break;
+
+                std::string msg_type;
+                status_error = _sock.socket_receive_string(msg_type, MAX_MSG_TYPE_LENGTH);
+
+                if(status_error == SOCKET_FAIL)
+                    break;
+
+                ROS_INFO("%s subcribed to Topic: %s, with Message Type: %s", _namespace.c_str(), topic.c_str(), msg_type.c_str());
+
+                _subscribe(topic, msg_type);
 
                 break;
             }
@@ -240,15 +271,15 @@ void CommunicationHandler::_subscribe(std::string const& topic, std::string cons
     SubscriberCallback *new_sub = new SubscriberCallback(topic, &_sock);
 
     if(message_type == "geometry_msgs/Pose2D")
-        new_sub->create_subscribtion<geometry_msgs::Pose2D, ros_msgs::Pose2D>(topic, _node_handle);
+        new_sub->subscribe<geometry_msgs::Pose2D, ros_msgs::Pose2D>(topic, _node_handle);
     else if(message_type == "geometry_msgs/Twist")
-        new_sub->create_subscribtion<geometry_msgs::Twist, ros_msgs::Twist2D>(topic, _node_handle);
+        new_sub->subscribe<geometry_msgs::Twist, ros_msgs::Twist2D>(topic, _node_handle);
     else if(message_type == "geometry_msgs/Point")
-        new_sub->create_subscribtion<geometry_msgs::Point, ros_msgs::Point2D>(topic, _node_handle);
+        new_sub->subscribe<geometry_msgs::Point, ros_msgs::Point2D>(topic, _node_handle);
     else if(message_type == "std_msgs/String")
-        new_sub->create_subscribtion<std_msgs::String, ros_msgs::String>(topic, _node_handle);
+        new_sub->subscribe<std_msgs::String, ros_msgs::String>(topic, _node_handle);
     else if(message_type == "turtlesim/Pose")
-        new_sub->create_subscribtion<turtlesim::Pose, ros_msgs::Pose2DSim>(topic, _node_handle);
+        new_sub->subscribe<turtlesim::Pose, ros_msgs::Pose2DSim>(topic, _node_handle);
     else
     {
         delete new_sub;

@@ -12,7 +12,7 @@ class SubscriberCallback
     public:
         SubscriberCallback(std::string topic, Socket* sock) : _topic{topic}, _sock{sock} {}
 
-        template <typename T, typename S> void create_subscribtion(std::string const& topic, ros::NodeHandle* node_handle)
+        template <typename T, typename S> void subscribe(std::string const& topic, ros::NodeHandle* node_handle)
         {
             _sub = node_handle->subscribe(topic, 1, &SubscriberCallback::_subscribtion_callback<T, S>, this);
         }

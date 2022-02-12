@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 
     }
 
-    //program needs time to execute callbacks from received log packets
+    //program needs time to execute action plus extra time to execute callbacks from received log packets
     loop_rate = 40;
     ros::Time start_time = ros::Time::now();
     while(ros::ok() && (ros::Time::now() - start_time).toSec() < 2 + stoi(log_time))
