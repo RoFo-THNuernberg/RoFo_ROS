@@ -8,7 +8,7 @@ Trajectory::~Trajectory(){
     
 }
 
-Gnuplot Trajectory::gp;
+//Gnuplot Trajectory::gp;
 
 unsigned int Trajectory::windowNum = 50;
 
@@ -52,12 +52,12 @@ void Trajectory::plotTrajecXoY(std::string title, Trajectory::x_or_y koordinate,
         }
 	}       
 
-	Trajectory::gp << "set term wxt "<< windowNum << " \n"<< "set xrange ["<<xrange.first<<":"<< xrange.second <<"]\nset yrange ["<<yrange.first<<":"<<yrange.second<<"]\n";
-	Trajectory::gp << "set term wxt title '"<< title << "'\n";
-    Trajectory::gp << "plot" << Trajectory::gp.file1d(pts) << "with lines title 'x',"
-        << Trajectory::gp.file1d(d_pts) << "with lines title 'xd'," 
-        << Trajectory::gp.file1d(dd_pts) << "with lines title 'xdd'" 
-        << std::endl;
+	//Trajectory::gp << "set term wxt "<< windowNum << " \n"<< "set xrange ["<<xrange.first<<":"<< xrange.second <<"]\nset yrange ["<<yrange.first<<":"<<yrange.second<<"]\n";
+	//Trajectory::gp << "set term wxt title '"<< title << "'\n";
+    //Trajectory::gp << "plot" << Trajectory::gp.file1d(pts) << "with lines title 'x',"
+    //    << Trajectory::gp.file1d(d_pts) << "with lines title 'xd'," 
+    //    << Trajectory::gp.file1d(dd_pts) << "with lines title 'xdd'" 
+    //    << std::endl;
 }
 
 void Trajectory::plotTrajectory(std::string title, double maxT, double dT, float k, std::pair<double,double> xrange, std::pair<double,double> yrange){
@@ -81,8 +81,8 @@ void Trajectory::plotTrajectory(std::string title, double maxT, double dT, float
         trajec.push_back(std::make_pair(pos.x, pos.y));
 	}      
 
-	Trajectory::gp << "set term wxt "<< windowNum << " \n"<< "set xrange ["<<xrange.first<<":"<< xrange.second <<"]\nset yrange ["<<yrange.first<<":"<<yrange.second<<"]\n";
-	Trajectory::gp << "set term wxt title '"<< title << "'\n";
-    Trajectory::gp << "plot" << Trajectory::gp.file1d(trajec) << "with lines title 'trajec'" << std::endl;
+	//Trajectory::gp << "set term wxt "<< windowNum << " \n"<< "set xrange ["<<xrange.first<<":"<< xrange.second <<"]\nset yrange ["<<yrange.first<<":"<<yrange.second<<"]\n";
+	//Trajectory::gp << "set term wxt title '"<< title << "'\n";
+    //Trajectory::gp << "plot" << Trajectory::gp.file1d(trajec) << "with lines title 'trajec'" << std::endl;
 
 }

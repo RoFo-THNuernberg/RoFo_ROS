@@ -7,7 +7,10 @@ project(ros_bridge_server)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp std_msgs)
+find_package(catkin REQUIRED COMPONENTS 
+    roscpp 
+    std_msgs
+    trajecgenerator)
 
 ###################################
 ## catkin specific configuration ##
@@ -18,7 +21,8 @@ find_package(catkin REQUIRED COMPONENTS roscpp std_msgs)
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package()
+catkin_package(
+    CATKIN_DEPENDS trajecgenerator)
 
 ###########
 ## Build ##
@@ -28,5 +32,5 @@ catkin_package()
 ## Your package locations should be listed before other locations
 include_directories( include/ros_bridge_server ${catkin_INCLUDE_DIRS} )
 
-add_executable(ros_bridge_server src/ros_bridge_server.cpp src/Socket.cpp src/CommunicationHandler.cpp)
+add_executable(ros_bridge_server src/ros_bridge_server.cpp src/Socket.cpp src/CommunicationHandler.cpp src/RosMsgs.cpp)
 target_link_libraries(ros_bridge_server ${catkin_LIBRARIES})

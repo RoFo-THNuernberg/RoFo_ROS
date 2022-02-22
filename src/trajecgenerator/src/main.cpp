@@ -15,8 +15,8 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "trajecgenerator");
   ros::NodeHandle n;
 
-  //Updaterate 50Hz:
-  float rate = 50.0f;
+  //Updaterate 100Hz:
+  float rate = 100.0f;
   ros::Rate loop_rate(rate);
 
 //hier die Master erzeugen und evtl. schon Trajectorien erzeugen (alternativ über Services) mit namen

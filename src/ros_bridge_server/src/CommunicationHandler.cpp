@@ -261,6 +261,8 @@ void CommunicationHandler::_advertise(std::string const& topic, std::string cons
         new_pub = new PublisherImpl<geometry_msgs::Point, ros_msgs::Point2D>(*_node_handle, topic, _sock);
     else if (message_type == "std_msgs/String")
         new_pub = new PublisherImpl<std_msgs::String, ros_msgs::String>(*_node_handle, topic, _sock);
+    else if (message_type == "trajecgenerator/c_trajec_vector")
+        new_pub = new PublisherImpl<trajecgenerator::c_trajec_vector, ros_msgs::Trajectory>(*_node_handle, topic, _sock); 
 
     if(new_pub != nullptr)
         _publisher.push_back(new_pub);
@@ -280,6 +282,8 @@ void CommunicationHandler::_subscribe(std::string const& topic, std::string cons
         new_sub->subscribe<std_msgs::String, ros_msgs::String>(topic, _node_handle);
     else if(message_type == "turtlesim/Pose")
         new_sub->subscribe<turtlesim::Pose, ros_msgs::Pose2DSim>(topic, _node_handle);
+    else if(message_type == "trajecgenerator/c_trajec_vector")
+        new_sub->subscribe<trajecgenerator::c_trajec_vector, ros_msgs::Trajectory>(topic, _node_handle);
     else
     {
         delete new_sub;

@@ -27,17 +27,17 @@ int main(int argc, char **argv)
 
     std::string robot_name;
     std::string logging_mode;
-    std::string log_time;
+    float log_time;
     std::string log_file;
 
     ros::NodeHandle node_handle;
     ros::NodeHandle params_nh("~");
     params_nh.param<std::string>("robot_name", robot_name, "robot_1");
     params_nh.param<std::string>("logging_mode", logging_mode, "vel_step");
-    params_nh.param<std::string>("log_time", log_time, "10");
+    params_nh.param<float>("log_time", log_time, 10.);
     params_nh.param<std::string>("log_file", log_file, "data.csv");
 
-    ROS_INFO("Start logging of %s in logging mode %s for %s to %s", robot_name.c_str(), logging_mode.c_str(), log_time.c_str(), log_file.c_str());
+    ROS_INFO("Start logging of %s in logging mode %s for %.2f to %s", robot_name.c_str(), logging_mode.c_str(), log_time, log_file.c_str());
 
     file = fopen(log_file.c_str(), "w");
 
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 
     //notify robot to start logging 
     std_msgs::String start_logging_msg;
-    start_logging_msg.data = log_time;
+    start_logging_msg.data = std::to_string(log_time);
     start_logging.publish(start_logging_msg);
 
     //start action
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
     //program needs time to execute action plus extra time to execute callbacks from received log packets
     loop_rate = 40;
     ros::Time start_time = ros::Time::now();
-    while(ros::ok() && (ros::Time::now() - start_time).toSec() < 2 + stoi(log_time))
+    while(ros::ok() && (ros::Time::now() - start_time).toSec() < 2 + (int)log_time)
     {
         ros::spinOnce();
         loop_rate.sleep();

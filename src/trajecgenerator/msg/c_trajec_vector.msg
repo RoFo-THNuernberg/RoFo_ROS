@@ -1,1 +1,1 @@
-c_trajec[] points;
+c_trajec[] points

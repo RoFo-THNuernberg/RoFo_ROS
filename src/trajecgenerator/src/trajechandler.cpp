@@ -2,10 +2,9 @@
 #include "pos_d.h"
 
 Trajechandler::Trajechandler(std::string name, std::shared_ptr<Trajectory> trajec_, float s, float k)
-    : trajec(trajec_), nh(ros::NodeHandle(name)), handlername(name), s(s), k(k)
+    : trajec(trajec_), nh(ros::NodeHandle(name)), handlername(name), s(s), k(k), torobot(name)
 {
     ///Publisher und Services erstellen
-    trajecPub = nh.advertise<swarmcontroller::Trajectory>("trajec", 1);
     setKSrv = nh.advertiseService("setK", &Trajechandler::setKCallback, this);
     startStopSrv = nh.advertiseService("startStop", &Trajechandler::startStopCallback, this);
     setTimeSrv = nh.advertiseService("setTime", &Trajechandler::setTimeCallback, this);
@@ -48,14 +47,9 @@ void Trajechandler::updateTrajectory(float dt){
         }
 
     }
-    // Objekt der Array-Uebertragungsklasse ToRobot erstellen
 
-    ToRobot torobot;
-
-
-
-    pos_d pos = trajec->getTrajec(S,K,0);
-    trajecPub.publish(pos_d_TO_Trajectory(pos));
+    torobot.storeInTrajectory(trajec->getTrajec(S,K,0));
+    torobot.publish();
 }
 
 void Trajechandler::setK(float k_){
@@ -147,17 +141,5 @@ bool Trajechandler::setConstVelocityCallback(trajecgenerator::float32Request::Re
     constVel = req.f;
     ROS_INFO("Const velocity changed");
     return true;
-}
-
-
-swarmcontroller::Trajectory Trajechandler::pos_d_TO_Trajectory(pos_d trajec){
-      swarmcontroller::Trajectory trajec_;
-      trajec_.x = trajec.x;
-      trajec_.y = trajec.y;
-      trajec_.dx = trajec.dx;
-      trajec_.dy = trajec.dy;
-      trajec_.ddx = trajec.ddx;
-      trajec_.ddy = trajec.ddy;
-      return trajec_;
 }
 

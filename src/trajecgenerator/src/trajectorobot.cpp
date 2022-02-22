@@ -1,39 +1,40 @@
 #include "trajectorobot.h"
 
 
-ToRobot::ToRobot()
+ToRobot::ToRobot(std::string robot_name) : nh(robot_name)
 {
-    c_trajec* points = new c_trajec[];
-    c_trajecPub = nh.advertise<trajecgenerator::c_trajec_vector>("c_trajec", 1);
+    c_trajecPub = nh.advertise<trajecgenerator::c_trajec_vector>("trajectory", 1);
 }
 
-ToRobot::~ToRobot()
+ToRobot::~ToRobot() {}
+
+
+void ToRobot::storeInTrajectory(pos_d trajectory_state)
 {
-    delete[] points;
+    trajecgenerator::c_trajec trajectory_state_vector;
+
+    trajectory_state_vector.x = trajectory_state.x;
+    trajectory_state_vector.y = trajectory_state.y;
+    trajectory_state_vector.dx = trajectory_state.dx;
+    trajectory_state_vector.dy = trajectory_state.dy;
+    trajectory_state_vector.ddx = trajectory_state.ddx;
+    trajectory_state_vector.ddy = trajectory_state.ddy;
+    trajectory_state_vector.timestamp = ros::Time::now().toNSec();
+
+    trajectory.points.push_back(trajectory_state_vector);
 }
 
-// fuer eine bestimmte Zeitdauer Trajektorienwerte in Array speichern
-// --> void Trajechandler::updateTrajectory(float dt) aufrufen
-
-ToRobot::ToRobot swarmcontroller::Trajectory storeInArray(Trajectory trajec_)
+bool ToRobot::publish()
 {
-    while(Trajechandler::active)
+    float dist = sqrt(pow(trajectory.points.front().x - trajectory.points.back().x, 2) + pow(trajectory.points.front().y - trajectory.points.back().y, 2));
+
+    if(dist < 0.1 && trajectory.points.size() > 50)
     {
-        int i = 0; //Zeitpunkt, wird nach Durchlauf der Schleife = Hinzufuegen eines Punktes iteriert
-        trajecgenerator::c_trajec arrTrajec;
-        arrTrajec.x = trajec_.x;
-        arrTrajec.y = trajec_.y;
-        arrTrajec.dx = trajec_.dx;
-        arrTrajec.dy = trajec_.dy;
-        arrTrajec.ddx = trajec_.ddx;
-        arrTrajec.ddy = trajec_.ddy;
-        arrTrajec.t = i++;
+        c_trajecPub.publish(trajectory);
+        trajectory.points.clear();
 
-        v.push_back(arrTrajec);
-
-        // swarmcontroller::Trajectory trajec_->c_trajec[];
-        
+        return true;
     }
 
-    c_trajec[].publish(v);
+    return false;
 }

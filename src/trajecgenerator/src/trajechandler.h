@@ -7,11 +7,13 @@
 #include "crsplinetrajectory.h"
 #include "csplinetrajectory.h"
 #include <string>
-#include <swarmcontroller/Trajectory.h>
 #include "trajecgenerator/float32Request.h"
 #include "trajecgenerator/boolRequest.h"
 #include "trajecgenerator/plotTrajectory.h"
 #include "trajecgenerator/plotTrajecXoY.h"
+
+#include "trajectorobot.h"
+
 
 /**
  * Klasse Trajechandle: enthält eine Trajektorie (Derivate der Klasse Trajektory)
@@ -119,8 +121,7 @@ private:
     ///node Handle für den Trajektorienhandler
     ros::NodeHandle nh;
 
-    ///Publisher:
-    ros::Publisher trajecPub;
+    ToRobot torobot;
 
 
     ///Serivce Servers:
@@ -147,13 +148,6 @@ private:
     bool plotTrajecXoYCallback(trajecgenerator::plotTrajecXoY::Request&, trajecgenerator::plotTrajecXoY::Response&);
     bool activateConstVelocityCallback(trajecgenerator::boolRequest::Request&, trajecgenerator::boolRequest::Response&);
     bool setConstVelocityCallback(trajecgenerator::float32Request::Request&, trajecgenerator::float32Request::Response&);
-
-    /**
-     * Funktion um pos_d in swarmcontroller::Trajectory Daten umzurechnen
-     * @param[in] trajec: pos_d Daten
-     * @return: swarmcontroller::Trajectory Daten
-     */
-    swarmcontroller::Trajectory pos_d_TO_Trajectory(pos_d trajec);
 
 };
 

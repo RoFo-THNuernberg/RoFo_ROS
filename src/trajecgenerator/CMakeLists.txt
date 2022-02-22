@@ -23,6 +23,7 @@ add_compile_options(-std=c++17)
  add_message_files(
    FILES
    c_trajec.msg
+   c_trajec_vector.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -47,7 +48,6 @@ add_compile_options(-std=c++17)
 
 
 catkin_package(
-  INCLUDE_DIRS include
 #  LIBRARIES trajecgenerator
   CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
@@ -93,6 +93,7 @@ set(trajecgenerator_node_SRCS
   src/circletrajectory.cpp
   src/crsplinetrajectory.cpp
   src/csplinetrajectory.cpp
+  src/trajectorobot.cpp
 )
 add_executable(trajecgenerator_node ${trajecgenerator_node_SRCS})
 

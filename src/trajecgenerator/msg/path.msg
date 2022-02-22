@@ -1,2 +1,0 @@
-float32 pointX
-float32 pointY

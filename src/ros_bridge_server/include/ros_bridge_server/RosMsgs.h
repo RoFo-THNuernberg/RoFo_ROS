@@ -6,6 +6,7 @@
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Twist.h"
 #include "turtlesim/Pose.h"
+#include "trajecgenerator/c_trajec_vector.h"
 
 #include "msg_id.h"
 
@@ -36,6 +37,8 @@ namespace ros_msgs
                 
                 return sizeof(int32_t) + data.size() + 1;
             }
+
+            void setSize(int32_t msg_len) {} 
             
             void serialize(uint8_t* buffer) const override 
             { 
@@ -70,6 +73,8 @@ namespace ros_msgs
                 return _msg_size; 
             }
 
+            void setSize(int32_t msg_len) {} 
+
             void serialize(uint8_t* buffer) const 
             { 
                 double* buff = (double*)buffer;
@@ -89,7 +94,7 @@ namespace ros_msgs
             }
 
         private:
-            size_t const _msg_size = 24;
+            static size_t const _msg_size;
     };
 
     struct Point2D : RosMsg, public geometry_msgs::Point
@@ -107,6 +112,8 @@ namespace ros_msgs
             { 
                 return _msg_size; 
             }
+            
+            void setSize(int32_t msg_len) {} 
 
             void serialize(uint8_t* buffer) const override 
             { 
@@ -124,7 +131,7 @@ namespace ros_msgs
             }
 
         private:
-            size_t const _msg_size = 16;
+            static size_t const _msg_size;
     };
 
     struct Twist2D : RosMsg, public geometry_msgs::Twist
@@ -143,6 +150,8 @@ namespace ros_msgs
                 return _msg_size; 
             }
 
+            void setSize(int32_t msg_len) {} 
+
             void serialize(uint8_t* buffer) const override 
             { 
                 double* buff = (double*)buffer;
@@ -159,7 +168,7 @@ namespace ros_msgs
             }       
 
         private:
-            size_t const _msg_size = 16;
+            static size_t const _msg_size;
     };
 
     struct Pose2DSim : RosMsg, public turtlesim::Pose
@@ -179,6 +188,8 @@ namespace ros_msgs
                 return _msg_size; 
             }
 
+            void setSize(int32_t msg_len) {} 
+
             void serialize(uint8_t* buffer) const override 
             { 
                 float* buff = (float*)buffer;
@@ -197,6 +208,72 @@ namespace ros_msgs
             }       
 
         private:
-            size_t const _msg_size = 12;
+            static size_t const _msg_size;
+    };
+
+    struct Trajectory : RosMsg, public trajecgenerator::c_trajec_vector
+    {
+        public:
+            Trajectory() : trajecgenerator::c_trajec_vector() {}
+            Trajectory(trajecgenerator::c_trajec_vector trajectory) : trajecgenerator::c_trajec_vector(trajectory) {}
+
+            size_t getSize() const
+            {
+                return points.size() * _msg_size + sizeof(int32_t);
+            }
+
+            void setSize(int32_t msg_len)
+            {
+                _trajectory_points = msg_len;
+            }
+
+            void serialize(uint8_t* buffer) const override
+            {   
+                if(points.empty() == false)
+                {
+                    *reinterpret_cast<int32_t*>(buffer) = points.size() * _msg_size;
+                    buffer += sizeof(int32_t);
+
+                    for(auto i : points)
+                    {
+                        float* buff = reinterpret_cast<float*>(buffer);
+
+                        buff[0] = i.x;
+                        buff[1] = i.y;
+                        buff[2] = i.dx;
+                        buff[3] = i.dy;
+                        buff[4] = i.ddx;
+                        buff[5] = i.ddy;
+
+                        *reinterpret_cast<uint64_t*>(&buff[6]) = i.timestamp;
+
+                        buffer += _msg_size;
+                    }
+                }
+            }
+
+            void deserialize(uint8_t* buffer) override
+            {
+                points.clear();
+
+                points.reserve(_trajectory_points);
+
+                for(auto i : points)
+                {
+                    i.x = buffer[0];
+                    i.y = buffer[1];
+                    i.dx = buffer[2];
+                    i.dy = buffer[3];
+                    i.ddx = buffer[4];
+                    i.ddy = buffer[5];
+                    i.timestamp = *reinterpret_cast<uint64_t*>(&buffer[6]);
+
+                    buffer += _msg_size;
+                }
+            }
+
+        private:
+            uint32_t _trajectory_points;
+            static size_t const _msg_size;
     };
 } 
