@@ -20,7 +20,7 @@ class MsgTransformer : public ros::NodeHandle
             _actual_pose_transformer = subscribe("/robot_1/pose2D", 1, &MsgTransformer::_actual_pose_transformer_callback, this);
             _trajectory_transformer = subscribe("/robot_1/trajectory", 1, &MsgTransformer::_trajectory_transformer_callback, this);
 
-            _goal_point_pub = advertise<geometry_msgs::Point>("robot_1/goal_point", 1);
+            _goal_point_pub = advertise<geometry_msgs::Point>("/robot_1/goal_point", 1);
             _path_pub = advertise<nav_msgs::Path>("/robot_1/path", 1);
         }
 

@@ -75,19 +75,18 @@ void Socket::_enable_keep_alive()
 
 int Socket::accept_connection()
 {   
-    return _connection_fd = accept4(_socket_fd, NULL, NULL, SOCK_NONBLOCK);
+    
+    _connection_fd = accept4(_socket_fd, NULL, NULL, SOCK_NONBLOCK);
+
+    _send_failed = false;
+
+    return _connection_fd;
 }
 
-/*
-int Socket::accept_connection()
-{   
-    return _connection_fd = accept(_socket_fd, NULL, NULL);
-}
-*/
 
-bool Socket::is_connected()
+bool Socket::sendFailed()
 {
-    return _is_connected;
+    return _send_failed;
 }
 
 
@@ -169,7 +168,7 @@ int Socket::socket_send(uint8_t const* tx_buffer, int buffer_len)
                 len = 0;
             else
             {
-                _is_connected = false;
+                _send_failed = true;
                 break;
             }
         }
@@ -185,7 +184,6 @@ int Socket::socket_send(uint8_t const* tx_buffer, int buffer_len)
 
 void Socket::close_connection()
 {
-    _is_connected = false;
     shutdown(_connection_fd, SHUT_RDWR);
     close(_connection_fd);
 }

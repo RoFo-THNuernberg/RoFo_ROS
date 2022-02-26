@@ -20,7 +20,7 @@ enum {
  * It is safe to create multiple Socket objects. 
  * Note: Only the first instance calls create_socket() \n 
  * 
- * Workflow: instantiate new Socket object -> Call accept connection -> Send/receive data and periodically check is_connected()
+ * Workflow: instantiate new Socket object -> Call accept connection -> Send/receive data and periodically check sendFailed()
  */
 class Socket
 {
@@ -35,10 +35,22 @@ class Socket
          *  - connection file describtor (is also stored in variable _connection_fd); returns SOCKET_FAIL if accept failed
          */
         int accept_connection();
+        
+        /**
+         * \brief Send operation 
+         * Sets _send_failed to false if communication fails.
+         * 
+         * \param buffer 
+         * \param buffer_len
+         * 
+         * \return 
+         * - amount of bytes send; SOCKET_FAIL if the communication failed
+         */
+        int socket_send(uint8_t const* buffer, int buffer_len);
 
         /**
          * \brief Receive new data from connection with client. 
-         * If communication with client failed, _is_connected gets set to false
+         * If communication with client failed, _send_failed gets set to false
          * 
          * \param rx_buffer Buffer for storing received data
          * \param recv_bytes Maximum amount of bytes to be received in the buffer
@@ -55,26 +67,12 @@ class Socket
         void close_connection();
 
         /**
-         * \brief Send operation 
-         * Sets _is_connected to false if communication fails.
-         * 
-         * \param buffer 
-         * \param buffer_len
-         * 
-         * \return 
-         * - amount of bytes send; SOCKET_FAIL if the communication failed
-         */
-        int socket_send(uint8_t const* buffer, int buffer_len);
-
-        /**
-         * \brief Getter function to check if socket is still connected.
-         * Failing send and receive operations will set the _is_connected 
-         * variable to false
+         * \brief Function to check if a socket_send call failed.
          *
          * \return
-         *  - true: if still connected; false: if not connected
+         *  - true: if call failed; false: if everything is ok
          */
-        bool is_connected();  
+        bool sendFailed();  
 
     private:
 
@@ -88,9 +86,7 @@ class Socket
 
         int _connection_fd;
 
-        std::mutex _socket_send;
-
-        bool _is_connected = true;
+        bool _send_failed = false;
 
         int const _socket_port;
         int const _socket_max_conn;

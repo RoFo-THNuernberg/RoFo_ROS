@@ -28,7 +28,7 @@ bool ToRobot::publish()
 {
     float dist = sqrt(pow(trajectory.points.front().x - trajectory.points.back().x, 2) + pow(trajectory.points.front().y - trajectory.points.back().y, 2));
 
-    if(dist < 0.1 && trajectory.points.size() > 50)
+    if(dist < 0.1 && trajectory.points.size() > 100)
     {
         c_trajecPub.publish(trajectory);
         trajectory.points.clear();

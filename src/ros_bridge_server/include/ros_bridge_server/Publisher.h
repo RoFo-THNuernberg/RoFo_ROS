@@ -36,7 +36,7 @@ template <typename T, typename S> class PublisherImpl : public Publisher
                     return false;
                 
                 //only relevant for trajectory msg type
-                ros_msg.setSize(msg_len);
+                ros_msg.allocateMemory(msg_len);
             }
 
             uint8_t* rx_buffer = new uint8_t[msg_len];
