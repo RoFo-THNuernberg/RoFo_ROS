@@ -27,22 +27,21 @@ int main(int argc, char **argv)
 
     std::string robot_name;
     std::string logging_mode;
-    std::string log_time;
+    float log_time;
     std::string log_file;
 
     ros::NodeHandle node_handle;
-    ros::NodeHandle params_nh("~");
-    params_nh.param<std::string>("robot_name", robot_name, "robot_1");
-    params_nh.param<std::string>("logging_mode", logging_mode, "vel_step");
-    params_nh.param<std::string>("log_time", log_time, "10");
-    params_nh.param<std::string>("log_file", log_file, "data.csv");
+    node_handle.param<std::string>("robot_name", robot_name, "robot_1");
+    node_handle.param<std::string>("logging_mode", logging_mode, "vel_step");
+    node_handle.param<float>("log_time", log_time, 10.);
+    node_handle.param<std::string>("log_file", log_file, "data.csv");
 
-    ROS_INFO("Start logging of %s in logging mode %s for %s to %s", robot_name.c_str(), logging_mode.c_str(), log_time.c_str(), log_file.c_str());
+    ROS_INFO("Start logging of %s in logging mode %s for %.2f to %s", robot_name.c_str(), logging_mode.c_str(), log_time, log_file.c_str());
 
     file = fopen(log_file.c_str(), "w");
 
-    ros::Subscriber recv_log = node_handle.subscribe("/robot_1/data_log", 10, data_log_callback);
-    ros::Publisher start_logging = node_handle.advertise<std_msgs::String>("/robot_1/start_log", 1);
+    ros::Subscriber recv_log = node_handle.subscribe(robot_name + "/data_log", 10, data_log_callback);
+    ros::Publisher start_logging = node_handle.advertise<std_msgs::String>(robot_name + "/start_log", 1);
     ros::Publisher action_pub;
 
     //Wait for some reason doesn't work without!!!
@@ -51,7 +50,7 @@ int main(int argc, char **argv)
 
     //notify robot to start logging 
     std_msgs::String start_logging_msg;
-    start_logging_msg.data = log_time;
+    start_logging_msg.data = std::to_string(log_time);
     start_logging.publish(start_logging_msg);
 
     //start action
@@ -71,7 +70,7 @@ int main(int argc, char **argv)
     //program needs time to execute action plus extra time to execute callbacks from received log packets
     loop_rate = 40;
     ros::Time start_time = ros::Time::now();
-    while(ros::ok() && (ros::Time::now() - start_time).toSec() < 2 + stoi(log_time))
+    while(ros::ok() && (ros::Time::now() - start_time).toSec() < 2 + (int)log_time)
     {
         ros::spinOnce();
         loop_rate.sleep();

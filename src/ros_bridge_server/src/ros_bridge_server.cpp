@@ -22,6 +22,8 @@ int main(int argc, char **argv)
             ROS_INFO("Accepted connection!");
             CommunicationHandler* new_communication = new CommunicationHandler(*sock);
         }
+        else 
+            delete sock;
         
         ros::spinOnce();
         loop_rate.sleep();

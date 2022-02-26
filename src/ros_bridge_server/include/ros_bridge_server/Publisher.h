@@ -34,6 +34,9 @@ template <typename T, typename S> class PublisherImpl : public Publisher
             {
                 if(_sock.socket_receive((uint8_t*)&msg_len, sizeof(msg_len)) == SOCKET_FAIL)
                     return false;
+                
+                //only relevant for trajectory msg type
+                ros_msg.allocateMemory(msg_len);
             }
 
             uint8_t* rx_buffer = new uint8_t[msg_len];

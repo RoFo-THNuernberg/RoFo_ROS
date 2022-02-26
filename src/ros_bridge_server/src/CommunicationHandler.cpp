@@ -31,8 +31,11 @@ void CommunicationHandler::_communication_handler(CommunicationHandler *conn_han
 
     while(ros::ok())
     {   
-        if(conn_handle->_sock.is_connected() == false)
+        if(conn_handle->_sock.sendFailed() == true)
+        {
+            ROS_INFO("Sending failed!");
             break;
+        }
 
         conn_handle->_send_keep_alive();
 
@@ -42,7 +45,7 @@ void CommunicationHandler::_communication_handler(CommunicationHandler *conn_han
         loop_rate.sleep();
     }
 
-    ROS_INFO("Shutting down communication_handler_thread! Socket errno: %d", errno);
+    ROS_INFO("Shutting down communication_handler_thread!");
 
     conn_handle->_sock.close_connection();
     
@@ -56,10 +59,7 @@ void CommunicationHandler::_check_keep_alive(CommunicationHandler *conn_handle)
     ros::Rate loop_rate(1000.0 / KEEP_ALIVE_CHECK_PERIOD_MS);
 
     while(ros::ok())
-    {
-        if(conn_handle->_sock.is_connected() == false)
-            break;
-        
+    {   
         if((ros::Time::now().toNSec() / 1000 - conn_handle->_keep_alive_time_us) / 1000 > MAX_KEEP_ALIVE_TIMOUT_MS)
             break;
 
@@ -86,7 +86,7 @@ int CommunicationHandler::_interpret_receive()
 
         if(status_error == SOCKET_FAIL)
         {
-            ROS_ERROR("Error while receiving MSG ID");
+            ROS_ERROR("Error while receiving MSG ID (errno: %d)", errno);
             break;
         }
         //Break while loop if socket buffer is empty
@@ -212,7 +212,7 @@ int CommunicationHandler::_interpret_receive()
     return status_error;
 }
 
-int CommunicationHandler::_send_keep_alive()
+void CommunicationHandler::_send_keep_alive()
 {   
     uint64_t time_now_us = ros::Time::now().toNSec() / 1000;
 
@@ -232,8 +232,6 @@ int CommunicationHandler::_send_keep_alive()
 
         _sock.socket_send(pkt_buffer, pkt_len);
     }
-
-    return SOCKET_OK;
 }
 
 Publisher* CommunicationHandler::_getPublisher(std::string const& topic)
@@ -261,6 +259,8 @@ void CommunicationHandler::_advertise(std::string const& topic, std::string cons
         new_pub = new PublisherImpl<geometry_msgs::Point, ros_msgs::Point2D>(*_node_handle, topic, _sock);
     else if (message_type == "std_msgs/String")
         new_pub = new PublisherImpl<std_msgs::String, ros_msgs::String>(*_node_handle, topic, _sock);
+    else if (message_type == "trajecgenerator/c_trajec_vector")
+        new_pub = new PublisherImpl<trajecgenerator::c_trajec_vector, ros_msgs::Trajectory>(*_node_handle, topic, _sock); 
 
     if(new_pub != nullptr)
         _publisher.push_back(new_pub);
@@ -280,6 +280,8 @@ void CommunicationHandler::_subscribe(std::string const& topic, std::string cons
         new_sub->subscribe<std_msgs::String, ros_msgs::String>(topic, _node_handle);
     else if(message_type == "turtlesim/Pose")
         new_sub->subscribe<turtlesim::Pose, ros_msgs::Pose2DSim>(topic, _node_handle);
+    else if(message_type == "trajecgenerator/c_trajec_vector")
+        new_sub->subscribe<trajecgenerator::c_trajec_vector, ros_msgs::Trajectory>(topic, _node_handle);
     else
     {
         delete new_sub;

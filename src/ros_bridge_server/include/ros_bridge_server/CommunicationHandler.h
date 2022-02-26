@@ -49,7 +49,7 @@ class CommunicationHandler
         int _interpret_receive();
 
 
-        int _send_keep_alive();
+        void _send_keep_alive();
 
 
         Publisher* _getPublisher(const std::string& topic);
