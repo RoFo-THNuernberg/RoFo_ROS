@@ -11,7 +11,7 @@ CommunicationHandler::CommunicationHandler(Socket& sock) : _sock{sock}, _communi
 CommunicationHandler::~CommunicationHandler()  
 {   
 
-    ROS_INFO_NAMED(_namespace.c_str(), "Destruct Connection Handler");
+    ROS_INFO("%s: Destruct Connection Handler", _namespace.c_str());
     _unadvertise();
     _unsubscribe();
 
@@ -34,21 +34,21 @@ void CommunicationHandler::_communication_handler(CommunicationHandler *conn_han
 
         if(conn_handle->_interpret_receive() == SOCKET_FAIL)
         {
-            ROS_INFO("Interpret Receive failed!");
+            ROS_ERROR("%s: Interpret Receive failed!", conn_handle->_namespace.c_str());
             break;
         }
 
         if((ros::Time::now().toNSec() / 1000 - conn_handle->_keep_alive_time_us) / 1000 > MAX_KEEP_ALIVE_TIMOUT_MS)
         {
-            ROS_INFO("Check Keep Alive Timout!");
-            ROS_INFO("Current Time: %ld, Last Keep_Alive: %ld", ros::Time::now().toNSec() / 1000, conn_handle->_keep_alive_time_us);
+            ROS_ERROR("%s: Check Keep Alive Timout!", conn_handle->_namespace.c_str());
+            ROS_ERROR("%s: Current Time: %ld, Last Keep_Alive: %ld", conn_handle->_namespace.c_str(), ros::Time::now().toNSec() / 1000, conn_handle->_keep_alive_time_us);
             break;
         }
     
         loop_rate.sleep();
     }
 
-    ROS_INFO("Shutting down communication_handler_thread!");
+    ROS_INFO("%s: Shutting down communication_handler_thread!", conn_handle->_namespace.c_str());
 
     conn_handle->_sock.close_connection();
 
@@ -68,7 +68,7 @@ int CommunicationHandler::_interpret_receive()
 
         if(status_error == SOCKET_FAIL)
         {
-            ROS_ERROR("Error while receiving MSG ID (errno: %d)", errno);
+            ROS_ERROR("%s: Error while receiving MSG ID (errno: %d)", _namespace.c_str(), errno);
             break;
         }
 
@@ -100,7 +100,7 @@ int CommunicationHandler::_interpret_receive()
 
                 _communication_initialized = true;
 
-                ROS_INFO("Received Initialize message! Client name: %s", _namespace.c_str());
+                ROS_INFO("%s: Received Initialize message!", _namespace.c_str());
 
                 _node_handle = new ros::NodeHandle(_namespace);
 
@@ -136,7 +136,7 @@ int CommunicationHandler::_interpret_receive()
                 if(status_error == SOCKET_FAIL)
                     break;
 
-                ROS_INFO("%s advertised Topic: %s, with Message Type: %s", _namespace.c_str(), topic.c_str(), msg_type.c_str());
+                ROS_INFO("%s: advertised Topic: %s, with Message Type: %s", _namespace.c_str(), topic.c_str(), msg_type.c_str());
 
                 _advertise(topic, msg_type);
 
@@ -156,7 +156,7 @@ int CommunicationHandler::_interpret_receive()
                 if(status_error == SOCKET_FAIL)
                     break;
 
-                ROS_INFO("%s subcribed to Topic: %s, with Message Type: %s", _namespace.c_str(), topic.c_str(), msg_type.c_str());
+                ROS_INFO("%s: subcribed to Topic: %s, with Message Type: %s", _namespace.c_str(), topic.c_str(), msg_type.c_str());
 
                 _subscribe(topic, msg_type);
 
@@ -170,7 +170,7 @@ int CommunicationHandler::_interpret_receive()
                 if(status_error == SOCKET_FAIL)
                     break;
 
-                //ROS_INFO("Received topic: %s", topic.c_str());
+                //ROS_INFO("%s: Received topic: %s", _namespace.c_str(), topic.c_str());
                 
                 Publisher* pub = _getPublisher(topic);
 
@@ -185,7 +185,7 @@ int CommunicationHandler::_interpret_receive()
                 break;
             }
             default:
-                ROS_ERROR("ID not found: %d", msg_id);
+                ROS_ERROR("%s: ID not found: %d", _namespace.c_str(), msg_id);
                 status_error = SOCKET_FAIL;
                 break;
         }
