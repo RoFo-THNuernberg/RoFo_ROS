@@ -78,17 +78,8 @@ int Socket::accept_connection()
     
     _connection_fd = accept4(_socket_fd, NULL, NULL, SOCK_NONBLOCK);
 
-    _send_failed = false;
-
     return _connection_fd;
 }
-
-
-bool Socket::sendFailed()
-{
-    return _send_failed;
-}
-
 
 int Socket::socket_receive(uint8_t* rx_buffer, int recv_bytes)
 {
@@ -163,15 +154,7 @@ int Socket::socket_send(uint8_t const* tx_buffer, int buffer_len)
         len = send(_connection_fd, tx_buffer + bytes_sent, buffer_len - bytes_sent, 0);
         
         if(len == SOCKET_FAIL)
-        {
-            if(errno == EWOULDBLOCK)
-                len = 0;
-            else
-            {
-                _send_failed = true;
-                break;
-            }
-        }
+            break;
 
         bytes_sent += len;
 

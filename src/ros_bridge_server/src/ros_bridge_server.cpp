@@ -13,17 +13,17 @@ int main(int argc, char **argv)
 
     ros::Rate loop_rate(100);
 
+    Socket* sock = new Socket;
+
     while(ros::ok())
     {
-        Socket* sock = new Socket;
-
         if(sock->accept_connection() != SOCKET_FAIL)
         {
             ROS_INFO("Accepted connection!");
             CommunicationHandler* new_communication = new CommunicationHandler(*sock);
+
+            sock = new Socket;
         }
-        else 
-            delete sock;
         
         ros::spinOnce();
         loop_rate.sleep();
