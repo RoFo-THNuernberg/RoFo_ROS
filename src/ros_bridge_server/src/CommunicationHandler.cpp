@@ -1,7 +1,6 @@
 #include "CommunicationHandler.h"
 
-CommunicationHandler::CommunicationHandler(Socket& sock) : _sock{sock}, _communication_handler_thread(_communication_handler, this),
-    _check_keep_alive_thread(_check_keep_alive, this) 
+CommunicationHandler::CommunicationHandler(Socket& sock) : _sock{sock}, _communication_handler_thread(_communication_handler, this)
 {
         _communication_handler_thread.detach();
 
@@ -27,7 +26,7 @@ CommunicationHandler::~CommunicationHandler()
 
 void CommunicationHandler::_communication_handler(CommunicationHandler *conn_handle)
 {   
-    ros::Rate loop_rate(1000);
+    ros::Rate loop_rate(20);
 
     while(ros::ok())
     {   
@@ -40,7 +39,17 @@ void CommunicationHandler::_communication_handler(CommunicationHandler *conn_han
         conn_handle->_send_keep_alive();
 
         if(conn_handle->_interpret_receive() == SOCKET_FAIL)
+        {
+            ROS_INFO("Interpret Receive failed!");
             break;
+        }
+
+        if((ros::Time::now().toNSec() / 1000 - conn_handle->_keep_alive_time_us) / 1000 > MAX_KEEP_ALIVE_TIMOUT_MS)
+        {
+            ROS_INFO("Check Keep Alive Timout!");
+            ROS_INFO("Current Time: %ld, Last Keep_Alive: %ld", ros::Time::now().toNSec() / 1000, conn_handle->_keep_alive_time_us);
+            break;
+        }
     
         loop_rate.sleep();
     }
@@ -48,30 +57,9 @@ void CommunicationHandler::_communication_handler(CommunicationHandler *conn_han
     ROS_INFO("Shutting down communication_handler_thread!");
 
     conn_handle->_sock.close_connection();
-    
-    conn_handle->_check_keep_alive_thread.join();
 
     delete conn_handle;
 }
-
-void CommunicationHandler::_check_keep_alive(CommunicationHandler *conn_handle)
-{   
-    ros::Rate loop_rate(1000.0 / KEEP_ALIVE_CHECK_PERIOD_MS);
-
-    while(ros::ok())
-    {   
-        if((ros::Time::now().toNSec() / 1000 - conn_handle->_keep_alive_time_us) / 1000 > MAX_KEEP_ALIVE_TIMOUT_MS)
-            break;
-
-        loop_rate.sleep();
-    }
-
-    ROS_INFO( "Shutting down keep_alive_thread!");
-    ROS_INFO("Current Time: %ld, Last Keep_Alive: %ld", ros::Time::now().toNSec() / 1000, conn_handle->_keep_alive_time_us);
-
-    conn_handle->_sock.close_connection();
-}
-
 
 int CommunicationHandler::_interpret_receive()
 {   
@@ -89,9 +77,13 @@ int CommunicationHandler::_interpret_receive()
             ROS_ERROR("Error while receiving MSG ID (errno: %d)", errno);
             break;
         }
+
         //Break while loop if socket buffer is empty
         else if (status_error == 0)
+        {
+            status_error = SOCKET_OK;
             break;
+        }
 
 
         //Guarantees that the first message is the initialize packet

@@ -39,8 +39,6 @@ class CommunicationHandler
          */
         static void _communication_handler(CommunicationHandler *conn_handle);
 
-        static void _check_keep_alive(CommunicationHandler *conn_handle);
-
         /**
          * \brief Receive and interpret incoming data from client
          * 
@@ -48,9 +46,7 @@ class CommunicationHandler
          */
         int _interpret_receive();
 
-
         void _send_keep_alive();
-
 
         Publisher* _getPublisher(const std::string& topic);
 
@@ -70,7 +66,6 @@ class CommunicationHandler
         bool _communication_initialized = false;
 
         std::thread _communication_handler_thread;
-        std::thread _check_keep_alive_thread;
 
         std::vector<Publisher*> _publisher;
         std::vector<SubscriberCallback*> _subscriber;
