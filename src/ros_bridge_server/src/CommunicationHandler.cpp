@@ -124,7 +124,7 @@ int CommunicationHandler::_interpret_receive()
 
                 _robot_time_difference_us = _keep_alive_time_us - robot_time;
 
-                ROS_INFO("Keep Alive! Robot Time: %ld", robot_time);
+                ROS_INFO("%s: Keep Alive! Robot Time: %ld", _namespace.c_str(), robot_time);
 
                 break;
             }
