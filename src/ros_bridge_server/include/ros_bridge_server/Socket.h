@@ -66,14 +66,6 @@ class Socket
 
         void close_connection();
 
-        /**
-         * \brief Function to check if a socket_send call failed.
-         *
-         * \return
-         *  - true: if call failed; false: if everything is ok
-         */
-        bool sendFailed();  
-
     private:
 
         /**
@@ -85,8 +77,6 @@ class Socket
         void _enable_keep_alive();
 
         int _connection_fd;
-
-        bool _send_failed = false;
 
         int const _socket_port;
         int const _socket_max_conn;

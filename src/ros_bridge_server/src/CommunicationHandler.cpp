@@ -30,12 +30,6 @@ void CommunicationHandler::_communication_handler(CommunicationHandler *conn_han
 
     while(ros::ok())
     {   
-        if(conn_handle->_sock.sendFailed() == true)
-        {
-            ROS_INFO("Sending failed!");
-            break;
-        }
-
         conn_handle->_send_keep_alive();
 
         if(conn_handle->_interpret_receive() == SOCKET_FAIL)
