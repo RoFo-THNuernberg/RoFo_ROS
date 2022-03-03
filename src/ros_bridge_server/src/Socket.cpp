@@ -60,18 +60,6 @@ void Socket::_create_socket()
     }
 }
 
-void Socket::_enable_keep_alive()
-{
-    int op_value = 1;
-    setsockopt(_connection_fd, SOL_SOCKET, SO_KEEPALIVE, &op_value, sizeof(int));
-    op_value = KEEP_ALIVE_PERIOD,
-    setsockopt(_connection_fd, IPPROTO_TCP, TCP_KEEPIDLE, &op_value, sizeof(int));
-    op_value = KEEP_ALIVE_TIMEOUT;
-    setsockopt(_connection_fd, IPPROTO_TCP, TCP_KEEPINTVL, &op_value, sizeof(int));
-    op_value = 5;
-    setsockopt(_connection_fd, IPPROTO_TCP, TCP_KEEPCNT, &op_value, sizeof(int));
-}
-
 
 int Socket::accept_connection()
 {   
@@ -103,7 +91,7 @@ int Socket::socket_receive(uint8_t* rx_buffer, int recv_bytes)
     return bytes_read;
 }
 
-int Socket::socket_receive_string(std::string& new_string, int max_bytes)
+int Socket::socket_receive_string(std::string& rx_string, int max_bytes)
 {
     int bytes_read = 0;
     int len = 0;
@@ -127,7 +115,7 @@ int Socket::socket_receive_string(std::string& new_string, int max_bytes)
     }
 
     if(len != SOCKET_FAIL)
-        new_string.assign(rx_buffer);
+        rx_string.assign(rx_buffer);
     else
         bytes_read = SOCKET_FAIL;
     

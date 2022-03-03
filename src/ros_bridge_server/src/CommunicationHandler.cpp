@@ -12,14 +12,20 @@ CommunicationHandler::~CommunicationHandler()
 {   
 
     ROS_INFO("%s: Destruct Connection Handler", _namespace.c_str());
-    _unadvertise();
-    _unsubscribe();
+    
+    for(auto i : _publisher)
+        delete i;
+
+    for(auto i : _subscriber)
+        delete i;
 
     if(_node_handle != nullptr)
     {
         _node_handle->shutdown();
         delete _node_handle;
     }
+
+    _sock.close_connection();
     
     delete &_sock;
 }
@@ -49,8 +55,6 @@ void CommunicationHandler::_communication_handler(CommunicationHandler *conn_han
     }
 
     ROS_INFO("%s: Shutting down communication_handler_thread!", conn_handle->_namespace.c_str());
-
-    conn_handle->_sock.close_connection();
 
     delete conn_handle;
 }
@@ -254,7 +258,7 @@ void CommunicationHandler::_advertise(std::string const& topic, std::string cons
 
 void CommunicationHandler::_subscribe(std::string const& topic, std::string const& message_type)
 {
-    SubscriberCallback *new_sub = new SubscriberCallback(topic, &_sock);
+    Subscriber *new_sub = new Subscriber(topic, &_sock);
 
     if(message_type == "geometry_msgs/Pose2D")
         new_sub->subscribe<geometry_msgs::Pose2D, ros_msgs::Pose2D>(topic, _node_handle);
@@ -277,19 +281,4 @@ void CommunicationHandler::_subscribe(std::string const& topic, std::string cons
     if(new_sub != nullptr)
         _subscriber.push_back(new_sub);
 }
-
-void CommunicationHandler::_unsubscribe()
-{
-    for(auto i : _subscriber)
-        delete i;
-}
-
-void CommunicationHandler::_unadvertise() 
-{
-    for(auto i : _publisher)
-        delete i;
-}
-
-
-
 

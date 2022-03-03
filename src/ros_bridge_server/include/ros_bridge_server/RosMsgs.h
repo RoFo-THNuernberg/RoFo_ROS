@@ -10,6 +10,16 @@
 
 #include "msg_id.h"
 
+/**
+ * @brief For every ROS Message Type which is communicated over the ROS Robot Bridge there has to be a ros_msgs::Type.
+ * These classes inherit from their ROS equivalent and must additionaly provide the methods 
+ * getSize(), allocateMemory(), getMsgType(), serialize() and deserialize().
+ * There are two types of RosMsgs Standard and Array type (e.g. String, Trajectory).
+ * For the Standard type message the allocateMemory() method can be left empty and
+ * the getSize() method will always return the accumulated size of its members.
+ * The Array type message uses the allocateMemory() method to allocate the required memory for the deserialization and
+ * the getSize() method returns zero if the array is empty or array length in bytes + 4 bytes (for the serialization of array length).
+ */
 namespace ros_msgs
 {
     struct String : public std_msgs::String
