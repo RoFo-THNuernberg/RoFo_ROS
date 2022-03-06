@@ -99,19 +99,18 @@ int Socket::socket_receive_string(std::string& rx_string, int max_bytes)
 
     while(bytes_read < max_bytes)
     {   
-        do
-        {
-            if(len == SOCKET_FAIL)
-                sleep(1000);
+        len = recv(_connection_fd, rx_buffer + bytes_read, 1, 0);
 
-            len = recv(_connection_fd, rx_buffer + bytes_read, 1, 0);
-        } 
-        while(len == SOCKET_FAIL && errno == EWOULDBLOCK);
+        if(len == SOCKET_FAIL && errno == EWOULDBLOCK)
+        {
+            len = 0;
+            usleep(1000);
+        }
 
         if(len == SOCKET_FAIL || rx_buffer[bytes_read] == '\0')
             break;
         else
-            bytes_read++;
+            bytes_read += len;
     }
 
     if(len != SOCKET_FAIL)
@@ -142,7 +141,7 @@ int Socket::socket_send(uint8_t const* tx_buffer, int buffer_len)
         len = send(_connection_fd, tx_buffer + bytes_sent, buffer_len - bytes_sent, 0);
         
         if(len == SOCKET_FAIL && errno == EWOULDBLOCK)
-                len = 0;
+            len = 0;
         else if(len == SOCKET_FAIL)
         {
             bytes_sent = SOCKET_FAIL;
