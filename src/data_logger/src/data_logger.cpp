@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 
     ros::Subscriber recv_log = node_handle.subscribe(robot_name + "/data_log", 10, data_log_callback);
     ros::Publisher start_logging = node_handle.advertise<std_msgs::String>(robot_name + "/start_log", 1);
-    ros::Publisher action_pub;
+    ros::Publisher action_pub = node_handle.advertise<geometry_msgs::Twist>(robot_name + "/vel", 1);
 
     //Wait for some reason doesn't work without!!!
     ros::Rate loop_rate(1);
@@ -53,19 +53,15 @@ int main(int argc, char **argv)
     start_logging_msg.data = std::to_string(log_time);
     start_logging.publish(start_logging_msg);
 
+    geometry_msgs::Twist velocity_step;
+
     //start action
     if(logging_mode == "vel_step")
     {
-        action_pub = node_handle.advertise<geometry_msgs::Twist>(robot_name + "/vel", 1);
-
-        geometry_msgs::Twist velocity_step;
-        velocity_step.linear.x = 2;
+        velocity_step.linear.x = 1;
         action_pub.publish(velocity_step);
     }
-    else if(logging_mode == "marvelmind_cov")
-    {
 
-    }
 
     //program needs time to execute action plus extra time to execute callbacks from received log packets
     loop_rate = 40;
@@ -79,16 +75,16 @@ int main(int argc, char **argv)
     //terminate action
     if(logging_mode == "vel_step")
     {
-        geometry_msgs::Twist velocity_step;
         velocity_step.linear.x = 0;
         action_pub.publish(velocity_step);
     }
-    else if(logging_mode == "marvelmind_cov")
-    {
 
-    }
+    ROS_INFO("Finished logging!");
+
 
     fclose(file);
+
+    ros::spin();
     
     return 0;
 }

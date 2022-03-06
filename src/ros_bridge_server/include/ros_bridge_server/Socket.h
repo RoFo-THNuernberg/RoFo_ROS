@@ -14,13 +14,8 @@ enum {
 } SOCKET_STATUS;
 
 /** 
- * \class Socket
- * 
- * \brief Abstraction layer for tcp socket communication.
- * It is safe to create multiple Socket objects. 
- * Note: Only the first instance calls create_socket() \n 
- * 
- * Workflow: instantiate new Socket object -> Call accept connection -> Send/receive data and periodically check sendFailed()
+ * @brief This class serves as an abstraction layer for the BSD Socket API.
+ * The first instance of Socket creates a nonblocking listening TCP socket.
  */
 class Socket
 {
@@ -29,52 +24,64 @@ class Socket
         ~Socket();
 
         /**
-         * \brief Accept new connections.
+         * @brief Accept incoming connection attempts from clients and create a new socket in nonblocking mode
          *
-         * \return
-         *  - connection file describtor (is also stored in variable _connection_fd); returns SOCKET_FAIL if accept failed
+         * @return connection file describtor (is also stored in variable _connection_fd); returns SOCKET_FAIL if accept failed
          */
         int accept_connection();
         
         /**
-         * \brief Send operation 
-         * Sets _send_failed to false if communication fails.
+         * @brief Send the specified amount of bytes to the client.
+         * This method will block until it can write all data to the socket 
          * 
-         * \param buffer 
-         * \param buffer_len
-         * 
-         * \return 
-         * - amount of bytes send; SOCKET_FAIL if the communication failed
+         * @param [in] tx_buffer 
+         * @param [in] buffer_len
+         * @return the amount of bytes sent if succesfull, SOCKET_FAIL if internal send() fails
          */
-        int socket_send(uint8_t const* buffer, int buffer_len);
+        int socket_send(uint8_t const* tx_buffer, int buffer_len);
 
         /**
-         * \brief Receive new data from connection with client. 
-         * If communication with client failed, _send_failed gets set to false
+         * @brief Receive data from the client.
+         * This function will block until the specified amount of bytes are retrieved.
          * 
-         * \param rx_buffer Buffer for storing received data
-         * \param recv_bytes Maximum amount of bytes to be received in the buffer
-         * 
-         * \return 
-         * - amount of bytes received; SOCKET_FAIL if the communication failed
+         * @param [out] rx_buffer
+         * @param [in] recv_bytes
+         * @return the amount of bytes received if succesfull, SOCKET_FAIL if internal recv() fails and recv would not block
          */
         int socket_receive(uint8_t* rx_buffer, int recv_bytes);
 
+        /**
+         * @brief Receive data from the client
+         * This method will not block.
+         * 
+         * @param [out] rx_buffer
+         * @param [in] recv_bytes
+         * @return the amount of bytes received if succesfull, SOCKET_FAIL if internal recv() fails and recv would not block
+         */
         int socket_receive_nonblock(uint8_t* rx_buffer, int recv_bytes);
 
-        int socket_receive_string(std::string& new_string, int max_bytes);
+        /**
+         * @brief Receive until '\0' character or the specified amount of bytes is received.
+         * This function will block until the above condition is met.
+         * 
+         * @param [out] rx_string
+         * @param [in] max_bytes
+         * @return the amount of bytes received if succesfull, SOCKET_FAIL if internal recv() fails and recv would not block
+         */
+        int socket_receive_string(std::string& rx_string, int max_bytes);
 
+        /**
+         * @brief Close and destroy the socket connection to the server.
+         */ 
         void close_connection();
 
     private:
 
         /**
-         * \brief Creates a server socket, which is ready for accepting connections from clients.
-         * This function is only called at the construction of the first socket object.
+         * @brief Creates a TCP socket, which listens for connections from clients.
+         * This function is only called once during the construction of the first socket object.
          */
         void _create_socket();
-
-        void _enable_keep_alive();
 
         int _connection_fd;
 

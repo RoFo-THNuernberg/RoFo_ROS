@@ -11,6 +11,12 @@
 
 #include <tf/transform_broadcaster.h>
 
+/**
+ * @brief This node transforms the topics used by the robot to messages which can be used in Rviz.  
+ * /move_base_simple/goal (Rviz) --> /robot_1/goal_point (Robot)
+ * /robot_1/pose2D (Robot) --> tf Transform (Rviz)
+ * /robot_1/trajectory (Robot) --> /robot_1/path (Rviz)
+ */
 class MsgTransformer : public ros::NodeHandle
 {
     public:

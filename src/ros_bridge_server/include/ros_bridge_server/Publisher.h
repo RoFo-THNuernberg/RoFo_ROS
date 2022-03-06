@@ -7,6 +7,9 @@
 #include "RosMsgs.h"
 #include "Socket.h"
 
+/**
+ * @brief Interface for storing Publishers of different message types in std::vector
+ */
 class Publisher 
 {
     public:
@@ -17,6 +20,9 @@ class Publisher
 
 };
 
+/**
+ * @brief The PublisherImpl class translates Publish messages from the robot client to ROS messages, which are published to ROS.
+ */
 template <typename T, typename S> class PublisherImpl : public Publisher
 {
     public:
@@ -24,6 +30,10 @@ template <typename T, typename S> class PublisherImpl : public Publisher
 
         ~PublisherImpl() {}
 
+        /**
+         * @brief Receives data from the TCP Socket, deserializes it to a RosMsg 
+         * and publishes the message to ROS.
+         */
         bool recvMessage() override
         {
             S ros_msg;
@@ -52,6 +62,12 @@ template <typename T, typename S> class PublisherImpl : public Publisher
             return true;
         }
 
+        /**
+         * @brief Method to check if the Publisher publishes to the provided topic.
+         * 
+         * @param [in] topic topic name
+         * @return true if topic equals internal topic, else false
+         */
         bool compareTopic(std::string const& topic)
         {
             return _topic == topic;
