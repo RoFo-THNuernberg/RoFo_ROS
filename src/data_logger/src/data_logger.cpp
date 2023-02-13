@@ -11,6 +11,7 @@ FILE* file;
 void data_log_callback(const std_msgs::String& data_log)
 {
     fprintf(file, "%s", data_log.data.c_str());
+    ROS_INFO("%s TEST",data_log.data.c_str());
 }
 
 

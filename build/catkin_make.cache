@@ -1,0 +1,2 @@
+data_logger:ros_bridge_server:rviz_msg_transformer:trajecgenerator
+-DCATKIN_DEVEL_PREFIX=/home/kamera/Doesch_RoboterFormation/Roboterformation_ROS/devel -DCMAKE_INSTALL_PREFIX=/home/kamera/Doesch_RoboterFormation/Roboterformation_ROS/install -G Unix Makefiles

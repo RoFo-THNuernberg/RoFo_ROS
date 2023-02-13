@@ -1,0 +1,8 @@
+prefix=/home/kamera/Doesch_RoboterFormation/Roboterformation_ROS/devel
+
+Name: rviz_msg_transformer
+Description: Description of rviz_msg_transformer
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: trajecgenerator

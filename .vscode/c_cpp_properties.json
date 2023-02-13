@@ -1,0 +1,32 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/kamera/Doesch_RoboterFormation/Roboterformation_ROS/devel/include/**",
+        "/home/kamera/publish/devel/include/**",
+        "/home/kamera/catkin_ws/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/kamera/catkin_ws/src/differentialdrivesim/include/**",
+        "/home/kamera/catkin_ws/src/dominiks_turtle_sim/include/**",
+        "/home/kamera/subscribe/src/my_pachage/include/**",
+        "/home/kamera/publish/src/my_package/include/**",
+        "/home/kamera/Doesch_RoboterFormation/Roboterformation_ROS/src/ros_bridge_server/include/**",
+        "/home/kamera/datasend/src/send/include/**",
+        "/home/kamera/catkin_ws/src/swarm_core/include/**",
+        "/home/kamera/catkin_ws/src/swarmcontroller/include/**",
+        "/home/kamera/catkin_ws/src/unicyclesim/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
