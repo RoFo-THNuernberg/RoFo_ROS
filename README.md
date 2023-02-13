@@ -1,4 +1,4 @@
-# Roboterformation ROS Repository
+# Roboterformation ROS Repository ([changed from maxdoesch](https://github.com/maxdoesch/Roboterformation_ROS))
 __Roboterformation__ is a student project aiming to create a system of multiple mobile robots, which are able to drive in formation.
 
 ## Getting Started
